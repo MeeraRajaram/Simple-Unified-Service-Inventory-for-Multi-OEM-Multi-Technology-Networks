@@ -1,0 +1,48 @@
+{% extends 'base.html' %}
+{% block content %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GNS3 Connection</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; }
+        .container { max-width: 400px; margin: auto; padding: 20px; border: 1px solid #ccc; border-radius: 8px; }
+        label { display: block; margin-top: 15px; }
+        input[type="text"] { width: 100%; padding: 8px; margin-top: 5px; }
+        button { margin-top: 20px; padding: 10px 20px; }
+        .flash { margin-top: 20px; color: #007bff; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>GNS3 Connection</h2>
+        <form method="POST">
+            <label for="gns3_url">GNS3 Server URL</label>
+            <input type="text" id="gns3_url" name="gns3_url" value="http://localhost:3080" required>
+
+            <label for="project_name">Project Name</label>
+            <input type="text" id="project_name" name="project_name" placeholder="Enter project name..." required>
+
+            <button type="submit">Connect to GNS3</button>
+        </form>
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            <div class="flash">
+              {% for category, message in messages %}
+                <div>{{ message }}</div>
+              {% endfor %}
+            </div>
+          {% endif %}
+        {% endwith %}
+        <div style="margin-top: 32px; display: flex; gap: 16px;">
+            <a href="/routers"><button type="button">Show Database</button></a>
+            <form method="POST" action="/end_connection" style="display:inline;">
+                <button type="submit" style="background:#dc3545;">End Connection</button>
+            </form>
+        </div>
+    </div>
+</body>
+</html>
+{% endblock %} 

@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}GNS3 WebApp{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        body { font-family: Arial, sans-serif; margin: 0; background: #f8f9fa; }
+        .navbar {
+            background: #222;
+            color: #fff;
+            padding: 0 24px;
+            display: flex;
+            align-items: center;
+            height: 56px;
+        }
+        .navbar a {
+            color: #fff;
+            text-decoration: none;
+            margin-right: 24px;
+            font-size: 1.08rem;
+            padding: 0 8px;
+            line-height: 56px;
+            transition: background 0.2s;
+        }
+        .navbar a:hover, .navbar a.active {
+            background: #007bff;
+            border-radius: 4px;
+        }
+        .container {
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 32px;
+            background: #fff;
+            border: 1px solid #e3e3e3;
+            border-radius: 12px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.04);
+        }
+    </style>
+</head>
+<body>
+    <div class="navbar">
+        <a href="/">Home</a>
+        <a href="/inventory">Inventory</a>
+        <a href="/rib">RIB</a>
+        <a href="/routefind">Route Finder</a>
+    </div>
+    {% block content %}{% endblock %}
+</body>
+</html> 

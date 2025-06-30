@@ -1,0 +1,159 @@
+{% extends 'base.html' %}
+{% block content %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inventory - IP Scanner</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; background: #f8f9fa; }
+        .container {
+            max-width: 700px;
+            margin: 40px auto;
+            padding: 32px 32px 24px 32px;
+            background: #fff;
+            border: 1px solid #e3e3e3;
+            border-radius: 12px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.04);
+        }
+        h2 { margin-bottom: 24px; }
+        label { display: block; margin-top: 18px; font-weight: 500; }
+        input[type="text"], input[type="password"] {
+            width: 100%;
+            padding: 10px;
+            margin-top: 6px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 1rem;
+        }
+        button {
+            margin-top: 24px;
+            padding: 10px 28px;
+            font-size: 1rem;
+            border: none;
+            border-radius: 5px;
+            background: #007bff;
+            color: #fff;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        button:hover { background: #0056b3; }
+        .flash { margin-top: 20px; color: #d9534f; }
+        table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            margin-top: 28px;
+            background: #fafbfc;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        th, td {
+            border-bottom: 1px solid #e3e3e3;
+            padding: 14px 10px;
+            text-align: left;
+            font-size: 0.98rem;
+        }
+        th {
+            background: #f1f3f6;
+            font-weight: 600;
+        }
+        tr:last-child td { border-bottom: none; }
+        .section-title {
+            margin-top: 36px;
+            margin-bottom: 10px;
+            font-size: 1.15rem;
+            font-weight: 600;
+            color: #333;
+        }
+        @media (max-width: 800px) {
+            .container { max-width: 98vw; padding: 10px; }
+            th, td { font-size: 0.93rem; padding: 8px 4px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Inventory - Enter IP and Subnet</h2>
+        <form method="POST">
+            <label for="ip">IP Address</label>
+            <input type="text" id="ip" name="ip" placeholder="e.g. 192.168.1.10" value="{{ ip or '' }}" required>
+
+            <label for="cidr">Subnet (CIDR)</label>
+            <input type="text" id="cidr" name="cidr" placeholder="e.g. 192.168.1.0/24" value="{{ cidr or '' }}" required>
+
+            <button type="submit">Validate & Scan</button>
+        </form>
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            <div class="flash">
+              {% for category, message in messages %}
+                <div>{{ message }}</div>
+              {% endfor %}
+            </div>
+          {% endif %}
+        {% endwith %}
+
+        {% if alive_ips %}
+        <div class="section-title">Alive IPs in Subnet</div>
+        <form method="POST">
+            <input type="hidden" name="ip" value="{{ ip }}">
+            <input type="hidden" name="cidr" value="{{ cidr }}">
+            <table>
+                <thead>
+                    <tr><th>IP Address</th><th>Username</th><th>Password</th></tr>
+                </thead>
+                <tbody>
+                    {% for aip in alive_ips %}
+                    <tr>
+                        <td>{{ aip }}</td>
+                        <td><input type="text" name="username_{{ aip }}" placeholder="Username"></td>
+                        <td><input type="password" name="password_{{ aip }}" placeholder="Password"></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            <button type="submit" name="submit_credentials" value="1">Check NETCONF & Continue</button>
+        </form>
+        {% endif %}
+
+        {% if netconf_results %}
+        <div class="section-title">NETCONF Device Results</div>
+        <div style="overflow-x:auto;">
+        <table>
+            <thead>
+                <tr>
+                    <th>Hostname</th>
+                    <th>IP</th>
+                    <th>Vendor</th>
+                    <th>NETCONF Username</th>
+                    <th>NETCONF Password</th>
+                    <th>NETCONF Status</th>
+                    <th>Protocols Enabled</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for dev in netconf_results %}
+                <tr>
+                    <td>{{ dev.hostname }}</td>
+                    <td>{{ dev.ip }}</td>
+                    <td>{{ dev.vendor }}</td>
+                    <td>{{ dev.username }}</td>
+                    <td><span style="letter-spacing:2px;">••••••••</span></td>
+                    <td>{{ dev.netconf_status }}</td>
+                    <td>{{ dev.protocols }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        </div>
+        {% endif %}
+
+        <div style="margin-top: 32px; display: flex; gap: 16px;">
+            <a href="/routers"><button type="button">Show Database</button></a>
+        </div>
+    </div>
+</body>
+</html>
+{% endblock %} 

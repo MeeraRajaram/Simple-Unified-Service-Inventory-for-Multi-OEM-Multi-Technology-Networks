@@ -1,0 +1,50 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container" style="max-width: 1100px; margin-top: 32px;">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="mb-0">Consolidated RIB Table</h2>
+        <div class="btn-group" role="group" aria-label="RIB Actions">
+            <form method="post" action="/rib/refresh" style="display:inline;">
+                <button type="submit" class="btn btn-primary" style="min-width: 130px;">Display RIB</button>
+            </form>
+            <a href="/rib/history" class="btn btn-outline-secondary" style="min-width: 130px;">View History</a>
+        </div>
+    </div>
+    {% if entries and entries|length > 0 %}
+    <div class="card shadow-sm mb-4">
+        <div class="card-body p-0">
+            <div style="overflow-x:auto;">
+                <table class="table table-striped table-hover mb-0" style="width:100%;">
+                    <thead class="table-primary">
+                        <tr>
+                            <th>Router</th>
+                            <th>Loopback IP</th>
+                            <th>Protocol</th>
+                            <th>Destination</th>
+                            <th>Interface</th>
+                            <th>Next Hop</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for router, loopback_ip, protocol, destination, interface, next_hop in entries %}
+                        <tr>
+                            <td>{{ router }}</td>
+                            <td>{{ loopback_ip }}</td>
+                            <td>{{ protocol }}</td>
+                            <td>{{ destination }}</td>
+                            <td>{{ interface }}</td>
+                            <td>{{ next_hop }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="alert alert-info text-center" style="margin:40px 0; font-size:1.2rem;">
+        No RIB entries found.
+    </div>
+    {% endif %}
+</div>
+{% endblock %} 

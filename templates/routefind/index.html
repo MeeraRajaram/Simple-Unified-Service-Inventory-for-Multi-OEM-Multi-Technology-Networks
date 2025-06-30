@@ -1,0 +1,314 @@
+{% extends "base.html" %}
+
+{% block title %}Route Finder{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1>Network Route Finder</h1>
+    <p class="lead">Find and visualize network paths between devices in your infrastructure.</p>
+
+    <div class="route-finder-form">
+        <form method="POST" action="{{ url_for('routefind.find_route') }}">
+            <div class="form-row">
+                <div class="form-group col-md-6">
+                    <label for="source">Source IP:</label>
+                    <input type="text" id="source" name="source" class="form-control" 
+                           value="{{ request.form.source }}" required>
+                </div>
+                <div class="form-group col-md-6">
+                    <label for="source_subnet">Source Subnet (CIDR):</label>
+                    <input type="text" id="source_subnet" name="source_subnet" class="form-control" 
+                           value="{{ request.form.source_subnet }}" placeholder="e.g., 192.168.1.0/24" required>
+                </div>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group col-md-6">
+                    <label for="destination">Destination IP:</label>
+                    <input type="text" id="destination" name="destination" class="form-control" 
+                           value="{{ request.form.destination }}" required>
+                </div>
+                <div class="form-group col-md-6">
+                    <label for="destination_subnet">Destination Subnet (CIDR):</label>
+                    <input type="text" id="destination_subnet" name="destination_subnet" class="form-control" 
+                           value="{{ request.form.destination_subnet }}" placeholder="e.g., 192.168.2.0/24" required>
+                </div>
+            </div>
+            
+            <button type="submit" class="btn btn-primary">Find Route</button>
+        </form>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ 'danger' if category == 'error' else category }}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    {% if source_router and dest_router %}
+        <div class="results-section">
+            <div class="router-info-grid">
+                <div class="router-info source-info">
+                    <h3>Source Router</h3>
+                    <table class="info-table">
+                        <tr>
+                            <th>Name:</th>
+                            <td>{{ source_router.name }}</td>
+                        </tr>
+                        <tr>
+                            <th>IP:</th>
+                            <td>{{ source_router.loopback }}</td>
+                        </tr>
+                        <tr>
+                            <th>Vendor:</th>
+                            <td>{{ source_router.vendor }}</td>
+                        </tr>
+                        <tr>
+                            <th>Version:</th>
+                            <td>{{ source_router.version }}</td>
+                        </tr>
+                    </table>
+                </div>
+                
+                <div class="router-info dest-info">
+                    <h3>Destination Router</h3>
+                    <table class="info-table">
+                        <tr>
+                            <th>Name:</th>
+                            <td>{{ dest_router.name }}</td>
+                        </tr>
+                        <tr>
+                            <th>IP:</th>
+                            <td>{{ dest_router.loopback }}</td>
+                        </tr>
+                        <tr>
+                            <th>Vendor:</th>
+                            <td>{{ dest_router.vendor }}</td>
+                        </tr>
+                        <tr>
+                            <th>Version:</th>
+                            <td>{{ dest_router.version }}</td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+
+            {% if paths %}
+                <div class="network-visualization">
+                    <h3>Network Topology</h3>
+                    <div id="network-canvas"></div>
+                </div>
+
+                <div class="path-details">
+                    <h3>Available Paths</h3>
+                    {% for path_type, path in paths %}
+                        <div class="path-info {{ path_type.lower() }}-path">
+                            <h4>{{ path_type }} Path</h4>
+                            <div class="path-hops">
+                                {% for router in path %}
+                                    <div class="hop">
+                                        <span class="hop-number">{{ loop.index }}</span>
+                                        <span class="router-name">{{ router }}</span>
+                                    </div>
+                                    {% if not loop.last %}
+                                        <div class="hop-arrow">→</div>
+                                    {% endif %}
+                                {% endfor %}
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        </div>
+    {% endif %}
+</div>
+
+{% if visualization_data %}
+<script src="https://d3js.org/d3.v7.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const data = {{ visualization_data | safe }};
+    const width = 900;
+    const height = 600;
+    
+    // Create SVG
+    const svg = d3.select('#network-canvas')
+        .append('svg')
+        .attr('width', width)
+        .attr('height', height);
+        
+    // Create marker for arrows
+    svg.append('defs').selectAll('marker')
+        .data(['primary', 'alternate'])
+        .enter().append('marker')
+        .attr('id', d => `arrow-${d}`)
+        .attr('viewBox', '0 -5 10 10')
+        .attr('refX', 15)
+        .attr('refY', 0)
+        .attr('markerWidth', 6)
+        .attr('markerHeight', 6)
+        .attr('orient', 'auto')
+        .append('path')
+        .attr('d', 'M0,-5L10,0L0,5')
+        .attr('class', d => `arrow-${d}`);
+    
+    // Draw links
+    const links = svg.selectAll('.link')
+        .data(data.links)
+        .enter().append('g')
+        .attr('class', 'link-group');
+        
+    links.append('line')
+        .attr('class', d => `link ${d.type}-link`)
+        .attr('x1', d => data.nodes.find(n => n.id === d.source).x)
+        .attr('y1', d => data.nodes.find(n => n.id === d.source).y)
+        .attr('x2', d => data.nodes.find(n => n.id === d.target).x)
+        .attr('y2', d => data.nodes.find(n => n.id === d.target).y)
+        .attr('marker-end', d => `url(#arrow-${d.type})`);
+    
+    // Draw nodes
+    const nodes = svg.selectAll('.node')
+        .data(data.nodes)
+        .enter().append('g')
+        .attr('class', 'node')
+        .attr('transform', d => `translate(${d.x},${d.y})`);
+        
+    nodes.append('circle')
+        .attr('r', 20)
+        .attr('class', 'node-circle');
+        
+    nodes.append('text')
+        .attr('dy', '.35em')
+        .attr('text-anchor', 'middle')
+        .text(d => d.label);
+        
+    // Add tooltips
+    links.append('title')
+        .text(d => `${d.sourceInterface} (${d.sourceIP}) → ${d.targetInterface} (${d.targetIP})\nSubnet: ${d.subnet}`);
+});
+</script>
+
+<style>
+.form-row {
+    display: flex;
+    margin: -10px;
+}
+
+.form-row .form-group {
+    padding: 10px;
+}
+
+.router-info-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    margin: 2rem 0;
+}
+
+.router-info {
+    padding: 1.5rem;
+    background: #f8f9fa;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.network-visualization {
+    margin: 2rem 0;
+    padding: 1rem;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+#network-canvas {
+    width: 100%;
+    height: 600px;
+    background: #fafafa;
+    border-radius: 4px;
+}
+
+.path-details {
+    margin: 2rem 0;
+}
+
+.path-info {
+    margin: 1rem 0;
+    padding: 1rem;
+    border-radius: 8px;
+}
+
+.primary-path {
+    background: #e3f2fd;
+    border: 1px solid #90caf9;
+}
+
+.alternate-path {
+    background: #f3e5f5;
+    border: 1px solid #ce93d8;
+}
+
+.path-hops {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    margin: 1rem 0;
+}
+
+.hop {
+    display: flex;
+    align-items: center;
+    padding: 0.5rem 1rem;
+    background: white;
+    border-radius: 4px;
+    margin: 0.25rem;
+}
+
+.hop-number {
+    font-weight: bold;
+    margin-right: 0.5rem;
+    color: #666;
+}
+
+.hop-arrow {
+    margin: 0 0.5rem;
+    color: #666;
+}
+
+/* D3 Visualization Styles */
+.node-circle {
+    fill: #fff;
+    stroke: #333;
+    stroke-width: 2px;
+}
+
+.link line {
+    stroke-width: 2px;
+}
+
+.primary-link {
+    stroke: #2196f3;
+}
+
+.alternate-link {
+    stroke: #9c27b0;
+}
+
+.arrow-primary {
+    fill: #2196f3;
+}
+
+.arrow-alternate {
+    fill: #9c27b0;
+}
+
+.node text {
+    font-size: 12px;
+    font-weight: bold;
+}
+</style>
+{% endif %}
+{% endblock %}

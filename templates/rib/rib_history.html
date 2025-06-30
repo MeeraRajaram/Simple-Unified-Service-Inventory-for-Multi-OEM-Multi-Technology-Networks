@@ -1,0 +1,45 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container">
+    <h2 style="margin-bottom: 24px;">RIB History</h2>
+    <a href="/rib" class="btn btn-secondary" style="margin-bottom: 24px;">Back to Current RIB</a>
+    {% if history_tables and history_tables|length > 0 %}
+        {% for draft in history_tables %}
+            <div style="margin-bottom: 40px;">
+                <h4>{{ draft.draft_name }} <span style="font-size:0.9em; color:#888;">({{ draft.timestamp }})</span></h4>
+                <div style="overflow-x:auto;">
+                <table style="width:100%; border-collapse:collapse;">
+                    <thead>
+                        <tr style="background:#007bff; color:#fff;">
+                            <th>Router</th>
+                            <th>Loopback IP</th>
+                            <th>Protocol</th>
+                            <th>Destination</th>
+                            <th>Interface</th>
+                            <th>Next Hop</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for router, loopback_ip, protocol, destination, interface, next_hop in draft.entries %}
+                        {% set row_color = '#f8f9fa' if loop.index0 % 2 == 0 else '#fff' %}
+                        <tr style="background-color: {{ row_color }};">
+                            <td>{{ router }}</td>
+                            <td>{{ loopback_ip }}</td>
+                            <td>{{ protocol }}</td>
+                            <td>{{ destination }}</td>
+                            <td>{{ interface }}</td>
+                            <td>{{ next_hop }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                </div>
+            </div>
+        {% endfor %}
+    {% else %}
+    <div style="text-align:center; color:#888; margin:40px 0; font-size:1.2rem;">
+        No RIB history found.
+    </div>
+    {% endif %}
+</div>
+{% endblock %} 

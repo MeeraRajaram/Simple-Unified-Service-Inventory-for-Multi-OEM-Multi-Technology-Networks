@@ -1,0 +1,52 @@
+{% extends 'base.html' %}
+{% block content %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Router Database</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; background: #f8f9fa; }
+        .container { max-width: 900px; margin: 40px auto; padding: 32px; background: #fff; border: 1px solid #e3e3e3; border-radius: 12px; box-shadow: 0 2px 12px rgba(0,0,0,0.04); }
+        h2 { margin-bottom: 24px; }
+        table { width: 100%; border-collapse: separate; border-spacing: 0; margin-top: 28px; background: #fafbfc; border-radius: 8px; overflow: hidden; }
+        th, td { border-bottom: 1px solid #e3e3e3; padding: 14px 10px; text-align: left; font-size: 0.98rem; }
+        th { background: #f1f3f6; font-weight: 600; }
+        tr:last-child td { border-bottom: none; }
+        .back-btn { margin-top: 24px; display: inline-block; padding: 10px 24px; background: #007bff; color: #fff; border: none; border-radius: 5px; text-decoration: none; font-size: 1rem; }
+        .back-btn:hover { background: #0056b3; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Managed Routers Database</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Hostname</th>
+                    <th>Software Version</th>
+                    <th>IP</th>
+                    <th>Vendor</th>
+                    <th>Username</th>
+                    <th>Password</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for hostname, software_version, ip, vendor, username, password in routers %}
+                <tr>
+                    <td>{{ hostname }}</td>
+                    <td>{{ software_version }}</td>
+                    <td>{{ ip }}</td>
+                    <td>{{ vendor }}</td>
+                    <td>{{ username }}</td>
+                    <td>{{ password }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        <a href="/" class="back-btn">Back to Main</a>
+    </div>
+</body>
+</html>
+{% endblock %} 

@@ -1,0 +1,5 @@
+flask
+requests
+ncclient
+lxml
+tabulate 

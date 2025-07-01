@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+
+{% block title %}Route Lookup Result{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h2>Route Lookup Result</h2>
+    <div class="mb-4">
+        <a href="{{ url_for('routefind.find_route') }}" class="btn btn-secondary">Back to Route Finder</a>
+    </div>
+    <div class="row">
+        <div class="col-md-6">
+            <h4>Source IP: <span class="text-primary">{{ source_ip }}</span></h4>
+            {% if result.source %}
+            <table class="table table-bordered">
+                <tr><th>Router Name</th><td>{{ result.source.router }}</td></tr>
+                <tr><th>Vendor</th><td>{{ result.source.vendor }}</td></tr>
+                <tr><th>Router IP</th><td>{{ result.source.router_ip }}</td></tr>
+                <tr><th>Interface</th><td>{{ result.source.interface }}</td></tr>
+            </table>
+            {% else %}
+            <div class="alert alert-warning">No router found for this source IP.</div>
+            {% endif %}
+        </div>
+        <div class="col-md-6">
+            <h4>Destination IP: <span class="text-primary">{{ dest_ip }}</span></h4>
+            {% if result.destination %}
+            <table class="table table-bordered">
+                <tr><th>Router Name</th><td>{{ result.destination.router }}</td></tr>
+                <tr><th>Vendor</th><td>{{ result.destination.vendor }}</td></tr>
+                <tr><th>Router IP</th><td>{{ result.destination.router_ip }}</td></tr>
+                <tr><th>Interface</th><td>{{ result.destination.interface }}</td></tr>
+            </table>
+            {% else %}
+            <div class="alert alert-warning">No router found for this destination IP.</div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %} 

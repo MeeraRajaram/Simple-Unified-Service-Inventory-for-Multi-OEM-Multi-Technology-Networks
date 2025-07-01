@@ -1,0 +1,22 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container" style="max-width: 600px; margin-top: 40px;">
+    <h2>Router Lookup Result</h2>
+    <div class="mb-3">
+        <a href="{{ url_for('routefind.find_router') }}" class="btn btn-secondary">Back to Lookup</a>
+    </div>
+    <div class="mb-4">
+        <strong>IP Address:</strong> <span class="text-primary">{{ ip_address }}</span>
+    </div>
+    {% if result %}
+    <table class="table table-bordered">
+        <tr><th>Router Name</th><td>{{ result.router }}</td></tr>
+        <tr><th>Vendor</th><td>{{ result.vendor }}</td></tr>
+        <tr><th>Router IP</th><td>{{ result.router_ip }}</td></tr>
+        <tr><th>Interface</th><td>{{ result.interface }}</td></tr>
+    </table>
+    {% else %}
+    <div class="alert alert-warning">No router found for this IP address.</div>
+    {% endif %}
+</div>
+{% endblock %} 

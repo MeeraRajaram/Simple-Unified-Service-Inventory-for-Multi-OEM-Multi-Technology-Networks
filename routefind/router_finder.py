@@ -8,6 +8,7 @@ Functions:
 
 from services.rib import get_rib_entries
 from services.vendor_host import get_device_info
+from .router_lookup import find_router_for_ip
 
 # Default NETCONF settings
 NETCONF_PORT = 830
@@ -92,4 +93,14 @@ def get_router_info(router_ip, port=NETCONF_PORT, username=NETCONF_USERNAME, pas
         'status': status,
         'interfaces': interfaces,
         'routes': routes
+    }
+
+def find_source_and_dest_routers(source_ip, dest_ip):
+    """
+    Given source and destination IPs, return router/interface info for both.
+    Returns: dict with 'source' and 'destination' keys, each mapping to the router info dict or None.
+    """
+    return {
+        'source': find_router_for_ip(source_ip),
+        'destination': find_router_for_ip(dest_ip)
     } 

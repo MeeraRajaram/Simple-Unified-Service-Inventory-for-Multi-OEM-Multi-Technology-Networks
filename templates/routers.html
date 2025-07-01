@@ -47,6 +47,44 @@
         </table>
         <a href="/" class="back-btn">Back to Main</a>
     </div>
+    <div class="card mt-4">
+        <div class="card-header">Router Finder / IP Lookup</div>
+        <div class="card-body">
+            <form id="ip-lookup-form">
+                <div class="input-group mb-3">
+                    <input type="text" class="form-control" id="ip-input" placeholder="Enter IP address">
+                    <button class="btn btn-primary" type="submit">Find Router</button>
+                </div>
+            </form>
+            <div id="lookup-result"></div>
+        </div>
+    </div>
+    <script>
+    document.getElementById('ip-lookup-form').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const ip = document.getElementById('ip-input').value.trim();
+        if (!ip) return;
+        fetch('/rib/lookup_ip', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ip})
+        })
+        .then(res => res.json())
+        .then(data => {
+            const resultDiv = document.getElementById('lookup-result');
+            if (data.error) {
+                resultDiv.innerHTML = `<div class="alert alert-danger">${data.error}</div>`;
+            } else {
+                resultDiv.innerHTML = `
+                    <div class="alert alert-success">
+                        <strong>IP ${ip}</strong> is local to router <strong>${data.router_ip}</strong>
+                        on interface <strong>${data.interface}</strong>.
+                    </div>
+                `;
+            }
+        });
+    });
+    </script>
 </body>
 </html>
 {% endblock %} 

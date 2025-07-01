@@ -5,9 +5,10 @@ Purpose: Handles route finding functionality and visualization in the web interf
 
 from flask import Blueprint, render_template, request, jsonify, flash
 from routefind.ip_validator import is_valid_ip, validate_ip_with_subnet
-from routefind.router_finder import find_router_for_ip, get_router_info
+from routefind.router_finder import get_router_info
 from routefind.path_finder import build_links, build_graph, find_paths
 from routefind.network_visualizer import generate_visualization_json
+from routefind.router_lookup import find_router_for_ip
 
 routefind_bp = Blueprint('routefind', __name__)
 
@@ -80,4 +81,15 @@ def find_route():
             flash(f'Error: {str(e)}', 'error')
             return render_template('routefind/index.html')
     
-    return render_template('routefind/index.html') 
+    return render_template('routefind/index.html')
+
+@routefind_bp.route('/find-router', methods=['GET', 'POST'])
+def find_router():
+    if request.method == 'POST':
+        ip_address = request.form.get('ip_address')
+        if not is_valid_ip(ip_address):
+            flash('Invalid IP address.', 'danger')
+            return render_template('routefind/find_router.html')
+        result = find_router_for_ip(ip_address)
+        return render_template('routefind/router_result.html', ip_address=ip_address, result=result)
+    return render_template('routefind/find_router.html') 

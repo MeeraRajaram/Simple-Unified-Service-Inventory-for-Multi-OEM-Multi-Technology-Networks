@@ -42,9 +42,11 @@
 <body>
     <div class="navbar">
         <a href="/">Home</a>
-        <a href="/inventory">Inventory</a>
+        <a href="/inventory">Network Discovery</a>
         <a href="/rib">RIB</a>
         <a href="/routefind">Route Finder</a>
+        <a href="{{ url_for('services_physical.services_physical_home') }}">Services & Physical</a>
+        <a href="{{ url_for('topology.topo_visualization') }}">Topology</a>
     </div>
     {% block content %}{% endblock %}
 </body>

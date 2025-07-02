@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container" style="max-width: 900px; margin-top: 40px;">
+    <h2>Services & Physical Inventory</h2>
+    <form method="post" action="{{ url_for('services_physical.services_physical_refresh') }}" style="display:inline;">
+        <button type="submit" class="btn btn-warning mb-3">Refresh Inventory</button>
+    </form>
+    {% if routers %}
+        {% for router in routers %}
+        <div class="card mb-4">
+            <div class="card-header">
+                <strong>{{ router.hostname or 'Unknown' }} ({{ router.ip }})</strong> - {{ router.vendor or 'Unknown' }}
+            </div>
+            <div class="card-body">
+                <h5>Physical Inventory</h5>
+                {% if router.phy_error %}
+                    <div class="alert alert-danger">{{ router.phy_error }}</div>
+                {% else %}
+                    <pre style="white-space: pre-wrap;">{{ router.physical | safe }}</pre>
+                {% endif %}
+                <hr/>
+                <h5>Services Inventory</h5>
+                {% if router.serv_error %}
+                    <div class="alert alert-danger">{{ router.serv_error }}</div>
+                {% else %}
+                    <pre style="white-space: pre-wrap;">{{ router.services }}</pre>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    {% else %}
+        <div class="alert alert-info">No routers found in the database.</div>
+    {% endif %}
+</div>
+{% endblock %} 

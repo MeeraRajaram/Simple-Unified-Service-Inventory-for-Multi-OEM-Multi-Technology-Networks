@@ -8,7 +8,7 @@
     <p class="lead">Find and visualize network paths between devices in your infrastructure.</p>
 
     <div class="route-finder-form">
-        <form method="POST" action="{{ url_for('routefind.find_route') }}">
+        <form method="POST" id="route-finder-form" action="{{ url_for('routefind.find_route') }}">
             <div class="form-row">
                 <div class="form-group col-md-6">
                     <label for="source">Source IP:</label>
@@ -36,7 +36,7 @@
             </div>
             
             <button type="submit" class="btn btn-primary">Find Route</button>
-            <a href="{{ url_for('routefind.find_router') }}" class="btn btn-outline-secondary ml-2" target="_blank">Find Routers</a>
+            <button type="submit" class="btn btn-outline-secondary ml-2" name="find_routers" id="find-routers-btn">Find Routers</button>
         </form>
     </div>
 
@@ -126,6 +126,43 @@
             {% endif %}
         </div>
     {% endif %}
+
+    {% if src_result and dst_result %}
+    <div class="container" style="max-width: 800px; margin-top: 40px;">
+        <h2>Router Lookup Result</h2>
+        <table class="table table-bordered">
+            <thead>
+                <tr>
+                    <th></th>
+                    <th>Source</th>
+                    <th>Destination</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <th>IP</th>
+                    <td>{{ source_ip }}</td>
+                    <td>{{ dest_ip }}</td>
+                </tr>
+                <tr>
+                    <th>Router Name</th>
+                    <td>{{ src_result.router }}</td>
+                    <td>{{ dst_result.router }}</td>
+                </tr>
+                <tr>
+                    <th>Vendor</th>
+                    <td>{{ src_result.vendor }}</td>
+                    <td>{{ dst_result.vendor }}</td>
+                </tr>
+                <tr>
+                    <th>Interface</th>
+                    <td>{{ src_result.interface }}</td>
+                    <td>{{ dst_result.interface }}</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
 </div>
 
 {% if visualization_data %}
@@ -192,6 +229,7 @@ document.addEventListener('DOMContentLoaded', function() {
         .text(d => `${d.sourceInterface} (${d.sourceIP}) → ${d.targetInterface} (${d.targetIP})\nSubnet: ${d.subnet}`);
 });
 </script>
+{% endif %}
 
 <style>
 .form-row {
@@ -311,5 +349,10 @@ document.addEventListener('DOMContentLoaded', function() {
     font-weight: bold;
 }
 </style>
-{% endif %}
+
+<script>
+document.getElementById('find-routers-btn').addEventListener('click', function(e) {
+    document.getElementById('route-finder-form').action = "{{ url_for('routefind.find_router_pair') }}";
+});
+</script>
 {% endblock %}

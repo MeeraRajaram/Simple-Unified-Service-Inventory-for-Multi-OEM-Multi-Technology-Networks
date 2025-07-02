@@ -24,6 +24,21 @@ class RouterDB:
                     last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 )
             ''')
+            # Create router_routes table for storing lookup history
+            self.conn.execute('''
+                CREATE TABLE IF NOT EXISTS router_routes (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    timestamp TEXT,
+                    source_ip TEXT,
+                    source_router TEXT,
+                    source_vendor TEXT,
+                    source_interface TEXT,
+                    dest_ip TEXT,
+                    dest_router TEXT,
+                    dest_vendor TEXT,
+                    dest_interface TEXT
+                )
+            ''')
 
     def _migrate_table(self):
         # Add software_version column if it doesn't exist
@@ -71,6 +86,30 @@ class RouterDB:
         with self.lock:
             self.conn.execute('DELETE FROM routers')
             self.conn.commit()
+
+    def add_router_route(self, source_ip, source_router, source_vendor, source_interface,
+                        dest_ip, dest_router, dest_vendor, dest_interface):
+        with self.lock:
+            self.conn.execute('''
+                INSERT INTO router_routes (
+                    timestamp, source_ip, source_router, source_vendor, source_interface,
+                    dest_ip, dest_router, dest_vendor, dest_interface
+                ) VALUES (datetime('now'), ?, ?, ?, ?, ?, ?, ?, ?)
+            ''', (source_ip, source_router, source_vendor, source_interface,
+                  dest_ip, dest_router, dest_vendor, dest_interface))
+            self.conn.commit()
+
+    def get_router_routes(self, limit=50):
+        with self.lock:
+            cur = self.conn.cursor()
+            cur.execute('''
+                SELECT timestamp, source_ip, source_router, source_vendor, source_interface,
+                       dest_ip, dest_router, dest_vendor, dest_interface
+                FROM router_routes
+                ORDER BY id DESC
+                LIMIT ?
+            ''', (limit,))
+            return cur.fetchall()
 
 # Singleton instance
 router_db = RouterDB() 

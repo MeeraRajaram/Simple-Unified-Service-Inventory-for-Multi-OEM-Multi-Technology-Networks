@@ -3,12 +3,13 @@ Blueprint: routefind.py
 Purpose: Handles route finding functionality and visualization in the web interface.
 """
 
-from flask import Blueprint, render_template, request, jsonify, flash
+from flask import Blueprint, render_template, request, jsonify, flash, redirect, url_for
 from routefind.ip_validator import is_valid_ip, validate_ip_with_subnet
 from routefind.router_finder import get_router_info
 from routefind.path_finder import build_links, build_graph, find_paths
 from routefind.network_visualizer import generate_visualization_json
 from routefind.router_lookup import find_router_for_ip
+from services.db import router_db
 
 routefind_bp = Blueprint('routefind', __name__)
 
@@ -92,4 +93,37 @@ def find_router():
             return render_template('routefind/find_router.html')
         result = find_router_for_ip(ip_address)
         return render_template('routefind/router_result.html', ip_address=ip_address, result=result)
-    return render_template('routefind/find_router.html') 
+    return render_template('routefind/find_router.html')
+
+@routefind_bp.route('/find-router-pair', methods=['POST'])
+def find_router_pair():
+    source_ip = request.form.get('source')
+    source_subnet = request.form.get('source_subnet')
+    dest_ip = request.form.get('destination')
+    dest_subnet = request.form.get('destination_subnet')
+
+    # Validate
+    is_valid_source, source_msg = validate_ip_with_subnet(source_ip, source_subnet)
+    is_valid_dest, dest_msg = validate_ip_with_subnet(dest_ip, dest_subnet)
+    if not is_valid_source or not is_valid_dest:
+        flash(f"Source: {source_msg} | Dest: {dest_msg}", 'danger')
+        return redirect(url_for('routefind.find_route'))
+
+    # Lookup routers
+    src_result = find_router_for_ip(source_ip)
+    dst_result = find_router_for_ip(dest_ip)
+
+    if not src_result or not dst_result:
+        flash("Could not find router for one or both IPs.", 'danger')
+        return redirect(url_for('routefind.find_route'))
+
+    # Store in DB
+    router_db.add_router_route(
+        source_ip, src_result['router'], src_result['vendor'], src_result['interface'],
+        dest_ip, dst_result['router'], dst_result['vendor'], dst_result['interface']
+    )
+
+    # Render result in the main index.html below the form
+    return render_template('routefind/index.html',
+                          source_ip=source_ip, dest_ip=dest_ip,
+                          src_result=src_result, dst_result=dst_result) 

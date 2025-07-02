@@ -2,6 +2,7 @@ import sqlite3
 import ipaddress
 from rib.db_utils import rib_db_manage
 from services.db import router_db
+from services.vendor_detect import detect_vendor_via_netconf
 
 def is_valid_host_in_subnet(ip, subnet):
     try:
@@ -32,6 +33,9 @@ def find_router_for_ip(ip):
     for c in candidates:
         for hostname, software_version, router_ip, vendor, username, password in routers:
             if c['loopback_ip'] == router_ip:
+                # Fallback to NETCONF vendor detection if vendor is unknown
+                if vendor == 'Unknown' or not vendor:
+                    vendor = detect_vendor_via_netconf(router_ip, username, password)
                 return {
                     'router': hostname,
                     'vendor': vendor,
@@ -47,6 +51,8 @@ def find_router_for_ip(ip):
                 if ip_obj in net:
                     for hostname, software_version, router_ip, vendor, username, password in routers:
                         if vendor.lower() == 'arista' and router_ip == loopback_ip:
+                            if vendor == 'Unknown' or not vendor:
+                                vendor = detect_vendor_via_netconf(router_ip, username, password)
                             return {
                                 'router': hostname,
                                 'vendor': vendor,
@@ -60,16 +66,19 @@ def find_router_for_ip(ip):
         c = candidates[0]
         for hostname, software_version, router_ip, vendor, username, password in routers:
             if c['loopback_ip'] == router_ip:
+                if vendor == 'Unknown' or not vendor:
+                    vendor = detect_vendor_via_netconf(router_ip, username, password)
                 return {
                     'router': hostname,
                     'vendor': vendor,
                     'router_ip': router_ip,
                     'interface': c['interface']
                 }
-        # If not found in inventory, fallback to RIB info
+        # If not found in inventory, fallback to RIB info and try NETCONF on loopback_ip
+        vendor = detect_vendor_via_netconf(c['loopback_ip'])
         return {
             'router': c['rib_router'],
-            'vendor': 'Unknown',
+            'vendor': vendor,
             'router_ip': c['loopback_ip'],
             'interface': c['interface']
         }

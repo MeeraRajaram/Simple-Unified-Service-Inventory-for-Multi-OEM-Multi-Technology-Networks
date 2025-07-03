@@ -9,6 +9,7 @@ Functions:
 from services.rib import get_rib_entries
 from services.vendor_host import get_device_info
 from .router_lookup import find_router_for_ip
+from ..pathfinder.valid import validate_ip_and_subnet
 
 # Default NETCONF settings
 NETCONF_PORT = 830

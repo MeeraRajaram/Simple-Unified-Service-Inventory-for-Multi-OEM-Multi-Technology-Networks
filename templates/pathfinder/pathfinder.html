@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Path Finder</title>
+    <style>
+        body { font-family: Arial, sans-serif; background: #fafbfc; }
+        .container { max-width: 600px; margin: 80px auto; padding: 40px; background: #fff; border-radius: 12px; box-shadow: 0 2px 12px rgba(0,0,0,0.04); text-align: center; }
+        .form-row { margin-bottom: 18px; }
+        label { display: block; margin-bottom: 6px; font-weight: bold; }
+        input, select { padding: 8px; font-size: 1rem; border-radius: 5px; border: 1px solid #bbb; width: 60%; }
+        button { padding: 12px 32px; background: #007bff; color: #fff; border: none; border-radius: 8px; font-size: 1.1rem; font-weight: bold; cursor: pointer; margin-top: 18px; }
+        button:hover { background: #0056b3; }
+        .result { margin-top: 24px; font-size: 1.1rem; }
+        .error { color: #c00; }
+        .success { color: #090; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Path Finder</h2>
+        <form id="pathfinder-form" onsubmit="return false;">
+            <div class="form-row">
+                <label for="src_ip">Source IP:</label>
+                <input type="text" id="src_ip" name="src_ip" required>
+            </div>
+            <div class="form-row">
+                <label for="src_mask">Source Subnet Mask:</label>
+                <select id="src_mask" name="src_mask">
+                    <option value="/32">/32</option>
+                    <option value="/30">/30</option>
+                    <option value="/29">/29</option>
+                    <option value="/28">/28</option>
+                    <option value="/27">/27</option>
+                    <option value="/26">/26</option>
+                    <option value="/25">/25</option>
+                    <option value="/24">/24</option>
+                    <option value="/23">/23</option>
+                    <option value="/22">/22</option>
+                </select>
+            </div>
+            <div class="form-row">
+                <label for="dst_ip">Destination IP:</label>
+                <input type="text" id="dst_ip" name="dst_ip" required>
+            </div>
+            <div class="form-row">
+                <label for="dst_mask">Destination Subnet Mask:</label>
+                <select id="dst_mask" name="dst_mask">
+                    <option value="/32">/32</option>
+                    <option value="/30">/30</option>
+                    <option value="/29">/29</option>
+                    <option value="/28">/28</option>
+                    <option value="/27">/27</option>
+                    <option value="/26">/26</option>
+                    <option value="/25">/25</option>
+                    <option value="/24">/24</option>
+                    <option value="/23">/23</option>
+                    <option value="/22">/22</option>
+                </select>
+            </div>
+            <button type="submit">Validate</button>
+        </form>
+        <div class="result" id="result"></div>
+        <button id="find-btn" style="display:none;margin-top:18px;" onclick="findInfo()">Find Info</button>
+        <div class="result" id="find-result"></div>
+        <div id="path-controls" style="display:none;margin-top:18px;">
+            <button id="display-path-btn">Display Path</button>
+            <span id="alt-path-span" style="margin-left:12px;">
+                <button id="alt-path-btn">Alt Path ▼</button>
+                <select id="alt-path-dropdown" style="display:none;"></select>
+            </span>
+            <button id="next-hop-btn" style="display:none;margin-left:12px;">Next Hop</button>
+        </div>
+    </div>
+    <div id="mynetwork" style="width:100%;height:500px;border:1px solid lightgray;display:none;"></div>
+    <div id="infoBox" style="margin-top:15px;padding:15px;border:1px solid #007bff;background-color:#f1f9ff;font-family:Arial,sans-serif;display:none;">
+      <div class="info-title" id="infoTitle">Node Info</div>
+      <div id="infoContent"></div>
+    </div>
+    <script src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
+    <script>
+        let lastValid = {src: false, dst: false, src_ip: '', dst_ip: ''};
+        let allPaths = [];
+        let currentPathIdx = 0;
+        let revealedHops = 1;
+        let visNetwork = null;
+        let visNodes = null;
+        let visEdges = null;
+        document.getElementById('pathfinder-form').onsubmit = function() {
+            var src_ip = document.getElementById('src_ip').value.trim();
+            var src_mask = document.getElementById('src_mask').value;
+            var dst_ip = document.getElementById('dst_ip').value.trim();
+            var dst_mask = document.getElementById('dst_mask').value;
+            fetch('/pathfinder/validate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ src_ip, src_mask, dst_ip, dst_mask })
+            })
+            .then(response => response.json())
+            .then(data => {
+                var html = '';
+                html += '<b>Source IP:</b> ' + (data.src_valid ? '<span class="success">' + data.src_msg + '</span>' : '<span class="error">' + data.src_msg + '</span>') + '<br>';
+                html += '<b>Destination IP:</b> ' + (data.dst_valid ? '<span class="success">' + data.dst_msg + '</span>' : '<span class="error">' + data.dst_msg + '</span>');
+                document.getElementById('result').innerHTML = html;
+                lastValid.src = data.src_valid;
+                lastValid.dst = data.dst_valid;
+                lastValid.src_ip = src_ip;
+                lastValid.dst_ip = dst_ip;
+                document.getElementById('find-result').innerHTML = '';
+                document.getElementById('find-btn').style.display = (data.src_valid && data.dst_valid) ? 'inline-block' : 'none';
+                document.getElementById('path-controls').style.display = 'none';
+                document.getElementById('mynetwork').style.display = 'none';
+                document.getElementById('infoBox').style.display = 'none';
+            });
+            return false;
+        };
+        function findInfo() {
+            document.getElementById('find-result').innerHTML = 'Searching...';
+            fetch('/pathfinder/find', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ src_ip: lastValid.src_ip, dst_ip: lastValid.dst_ip })
+            })
+            .then(response => response.json())
+            .then(data => {
+                let html = '';
+                function infoBlock(title, info) {
+                    if (!info.found) {
+                        return `<div style='margin-bottom:18px;'><b>${title}:</b> <span class='error'>${info.msg}</span></div>`;
+                    }
+                    return `<div style='margin-bottom:18px;'><b>${title}:</b><br>
+                        <b>Router Name:</b> ${info.router_name}<br>
+                        <b>Router IP:</b> ${info.router_ip}<br>
+                        <b>Interface:</b> ${info.interface}<br>
+                        <b>Vendor:</b> ${info.vendor}<br>
+                        <b>Hostname:</b> ${info.hostname}<br>
+                        <b>Version:</b> ${info.version}<br>
+                        <b>Status:</b> ${info.status}
+                    </div>`;
+                }
+                html += infoBlock('Source', data.source);
+                html += infoBlock('Destination', data.destination);
+                document.getElementById('find-result').innerHTML = html;
+                // Now fetch all paths for visualization
+                fetch('/pathfinder/pathvis', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ src_ip: lastValid.src_ip, dst_ip: lastValid.dst_ip })
+                })
+                .then(response => response.json())
+                .then(visdata => {
+                    if (visdata.error || !visdata.paths || visdata.paths.length === 0) {
+                        document.getElementById('path-controls').style.display = 'none';
+                        document.getElementById('mynetwork').style.display = 'none';
+                        document.getElementById('infoBox').style.display = 'none';
+                        return;
+                    }
+                    allPaths = visdata.paths;
+                    currentPathIdx = 0;
+                    revealedHops = 1;
+                    // Setup alt path dropdown
+                    const altDropdown = document.getElementById('alt-path-dropdown');
+                    altDropdown.innerHTML = '';
+                    for (let i = 1; i < allPaths.length; ++i) {
+                        let opt = document.createElement('option');
+                        opt.value = i;
+                        opt.text = 'Alt Path ' + i;
+                        altDropdown.appendChild(opt);
+                    }
+                    document.getElementById('path-controls').style.display = 'block';
+                    document.getElementById('alt-path-btn').onclick = function() {
+                        altDropdown.style.display = altDropdown.style.display === 'none' ? 'inline-block' : 'none';
+                    };
+                    altDropdown.onchange = function() {
+                        currentPathIdx = parseInt(altDropdown.value);
+                        revealedHops = 1;
+                        renderPathStep();
+                    };
+                    document.getElementById('display-path-btn').onclick = function() {
+                        currentPathIdx = 0;
+                        revealedHops = 1;
+                        renderPathStep();
+                    };
+                    document.getElementById('next-hop-btn').onclick = function() {
+                        revealedHops++;
+                        renderPathStep();
+                    };
+                    // By default, do not show any path until user clicks Display Path
+                    document.getElementById('mynetwork').style.display = 'none';
+                    document.getElementById('infoBox').style.display = 'none';
+                    document.getElementById('next-hop-btn').style.display = 'none';
+                });
+            });
+        }
+        function renderPathStep() {
+            const path = allPaths[currentPathIdx];
+            // Only show up to revealedHops nodes/edges
+            const nodes = new vis.DataSet(path.nodes.slice(0, revealedHops));
+            const edges = new vis.DataSet(path.edges.slice(0, Math.max(0, revealedHops-1)));
+            const container = document.getElementById('mynetwork');
+            container.style.display = 'block';
+            const data = { nodes, edges };
+            const options = {
+                interaction: { hover: true },
+                physics: { stabilization: true },
+                nodes: { borderWidth: 2 },
+                edges: { smooth: { type: 'cubicBezier' } }
+            };
+            visNetwork = new vis.Network(container, data, options);
+            visNodes = nodes;
+            visEdges = edges;
+            // Node click event
+            visNetwork.on('click', function(params) {
+                const nodeId = params.nodes[0];
+                const infoBox = document.getElementById('infoBox');
+                const infoTitle = document.getElementById('infoTitle');
+                const infoContent = document.getElementById('infoContent');
+                if (nodeId !== undefined) {
+                    const node = nodes.get(nodeId);
+                    infoBox.style.display = 'block';
+                    infoTitle.textContent = `🟢 ${node.label}`;
+                    infoContent.innerHTML = node.info.map(line => `<div>${line}</div>`).join('');
+                } else {
+                    infoBox.style.display = 'none';
+                }
+            });
+            // Show/hide Next Hop button
+            if (revealedHops < path.nodes.length) {
+                document.getElementById('next-hop-btn').style.display = 'inline-block';
+            } else {
+                document.getElementById('next-hop-btn').style.display = 'none';
+            }
+        }
+    </script>
+</body>
+</html> 

@@ -134,7 +134,39 @@ def store_paths(paths, db_path, src_ip, dst_ip):
     conn.commit()
     conn.close()
 
-# Main path finding function
+def dijkstra_shortest_path(graph, src, dst):
+    # Standard Dijkstra for shortest path only
+    queue = [(0, [src])]
+    visited = set()
+    while queue:
+        cost, path = heapq.heappop(queue)
+        node = path[-1]
+        if node == dst:
+            return path
+        if (tuple(path)) in visited:
+            continue
+        visited.add(tuple(path))
+        for neighbor, *_ in graph[node]:
+            if neighbor not in path:
+                heapq.heappush(queue, (cost+1, path + [neighbor]))
+    return None
+
+def find_all_simple_paths(graph, src, dst, max_paths=20, exclude_path=None):
+    # BFS to find all simple paths from src to dst (up to max_paths), optionally excluding a given path
+    queue = deque([[src]])
+    paths = []
+    while queue and len(paths) < max_paths:
+        path = queue.popleft()
+        node = path[-1]
+        if node == dst:
+            if exclude_path is None or path != exclude_path:
+                paths.append(list(path))
+            continue
+        for neighbor, *_ in graph[node]:
+            if neighbor not in path:
+                queue.append(path + [neighbor])
+    return paths
+
 def find_paths(src_ip, dst_ip):
     # 1. Map IPs to routers
     src_router, src_iface = ip_to_router(src_ip)
@@ -143,9 +175,21 @@ def find_paths(src_ip, dst_ip):
         return {'error': 'Source or destination IP not found in INIP DB.'}
     # 2. Build graph
     graph = build_graph()
-    # 3. Find all shortest paths (primary + alternates)
-    shortest_paths, all_paths = dijkstra_all_paths(graph, src_router, dst_router, max_paths=10)
-    # 4. For each path, build hop info
+    # 3. Find primary path using Dijkstra
+    primary_path = dijkstra_shortest_path(graph, src_router, dst_router)
+    # 4. Find all unique alternate paths (excluding primary)
+    alternates = []
+    if primary_path:
+        alternates = find_all_simple_paths(graph, src_router, dst_router, max_paths=20, exclude_path=primary_path)
+    # Remove duplicates
+    unique_alternates = []
+    seen = set()
+    for p in alternates:
+        key = tuple(p)
+        if key not in seen:
+            unique_alternates.append(p)
+            seen.add(key)
+    # 5. For each path, build hop info
     def build_hop_info(path):
         hops = []
         for idx, router in enumerate(path):
@@ -156,20 +200,18 @@ def find_paths(src_ip, dst_ip):
                 hop['entry_ip'] = src_ip
             else:
                 prev_router = path[idx-1]
-                # Find the interface connecting prev_router to this router
-                for iface, ip in get_interfaces(router):
-                    if ip in [edge[4] for edge in graph[prev_router] if edge[0] == router]:
-                        hop['entry_interface'] = iface
-                        hop['entry_ip'] = ip
+                for edge in graph[prev_router]:
+                    if edge[0] == router:
+                        hop['entry_interface'] = edge[2]
+                        hop['entry_ip'] = edge[4]
                         break
             if idx < len(path)-1:
                 next_router = path[idx+1]
-                for iface, ip in get_interfaces(router):
-                    if ip in [edge[3] for edge in graph[router] if edge[0] == next_router]:
-                        hop['exit_interface'] = iface
-                        hop['exit_ip'] = ip
+                for edge in graph[router]:
+                    if edge[0] == next_router:
+                        hop['exit_interface'] = edge[1]
+                        hop['exit_ip'] = edge[3]
                         break
-                # Determine connection type to next_router
                 protocol = get_protocol_between(router, next_router)
                 if protocol:
                     hop['connection_type'] = protocol
@@ -179,15 +221,16 @@ def find_paths(src_ip, dst_ip):
                 hop['connection_type'] = None  # Last hop (destination)
             hops.append(hop)
         return hops
-    # 5. Store primary path and alternates
-    if shortest_paths:
-        store_paths([build_hop_info(shortest_paths[0])], PRIMARY_PATH_DB, src_ip, dst_ip)
-    if len(shortest_paths) > 1:
-        store_paths([build_hop_info(p) for p in shortest_paths[1:]], ALTPATH_DB, src_ip, dst_ip)
-    if all_paths:
+    # 6. Store primary path and alternates
+    if primary_path:
+        store_paths([build_hop_info(primary_path)], PRIMARY_PATH_DB, src_ip, dst_ip)
+    if unique_alternates:
+        store_paths([build_hop_info(p) for p in unique_alternates], ALTPATH_DB, src_ip, dst_ip)
+    if primary_path or unique_alternates:
+        all_paths = ([primary_path] if primary_path else []) + unique_alternates
         store_paths([build_hop_info(p) for p in all_paths], ALLPATHS_DB, src_ip, dst_ip)
     return {
-        'primary': [build_hop_info(shortest_paths[0])] if shortest_paths else [],
-        'alternates': [build_hop_info(p) for p in shortest_paths[1:]],
-        'all': [build_hop_info(p) for p in all_paths]
+        'primary': [build_hop_info(primary_path)] if primary_path else [],
+        'alternates': [build_hop_info(p) for p in unique_alternates],
+        'all': [build_hop_info(p) for p in ([primary_path] if primary_path else []) + unique_alternates]
     } 

@@ -63,10 +63,10 @@
         <button id="find-btn" style="display:none;margin-top:18px;" onclick="findInfo()">Find Info</button>
         <div class="result" id="find-result"></div>
         <div id="path-controls" style="display:none;margin-top:18px;">
-            <button id="display-path-btn">Display Path</button>
+            <button id="primary-path-btn">Primary Path</button>
             <span id="alt-path-span" style="margin-left:12px;">
-                <button id="alt-path-btn">Alt Path ▼</button>
-                <select id="alt-path-dropdown" style="display:none;"></select>
+                <select id="alt-path-dropdown" style="display:inline-block;"></select>
+                <button id="alt-path-btn">Show Alt Path</button>
             </span>
             <button id="next-hop-btn" style="display:none;margin-left:12px;">Next Hop</button>
         </div>
@@ -129,12 +129,12 @@
                     }
                     return `<div style='margin-bottom:18px;'><b>${title}:</b><br>
                         <b>Router Name:</b> ${info.router_name}<br>
-                        <b>Router IP:</b> ${info.router_ip}<br>
+                        <!-- <b>Router IP:</b> ${info.router_ip}<br> -->
                         <b>Interface:</b> ${info.interface}<br>
-                        <b>Vendor:</b> ${info.vendor}<br>
-                        <b>Hostname:</b> ${info.hostname}<br>
-                        <b>Version:</b> ${info.version}<br>
-                        <b>Status:</b> ${info.status}
+                        <!-- <b>Vendor:</b> ${info.vendor}<br> -->
+                        <!-- <b>Hostname:</b> ${info.hostname}<br> -->
+                        <!-- <b>Version:</b> ${info.version}<br> -->
+                       <!-- <b>Status:</b> ${info.status} -->
                     </div>`;
                 }
                 html += infoBlock('Source', data.source);
@@ -157,7 +157,7 @@
                     allPaths = visdata.paths;
                     currentPathIdx = 0;
                     revealedHops = 1;
-                    // Setup alt path dropdown
+                    // Setup alt path dropdown (only alternates)
                     const altDropdown = document.getElementById('alt-path-dropdown');
                     altDropdown.innerHTML = '';
                     for (let i = 1; i < allPaths.length; ++i) {
@@ -166,25 +166,24 @@
                         opt.text = 'Alt Path ' + i;
                         altDropdown.appendChild(opt);
                     }
-                    document.getElementById('path-controls').style.display = 'block';
-                    document.getElementById('alt-path-btn').onclick = function() {
-                        altDropdown.style.display = altDropdown.style.display === 'none' ? 'inline-block' : 'none';
-                    };
-                    altDropdown.onchange = function() {
-                        currentPathIdx = parseInt(altDropdown.value);
-                        revealedHops = 1;
-                        renderPathStep();
-                    };
-                    document.getElementById('display-path-btn').onclick = function() {
+                    document.getElementById('path-controls').style.display = (allPaths.length > 0) ? 'block' : 'none';
+                    document.getElementById('primary-path-btn').onclick = function() {
                         currentPathIdx = 0;
                         revealedHops = 1;
                         renderPathStep();
+                    };
+                    document.getElementById('alt-path-btn').onclick = function() {
+                        if (altDropdown.options.length > 0) {
+                            currentPathIdx = parseInt(altDropdown.value);
+                            revealedHops = 1;
+                            renderPathStep();
+                        }
                     };
                     document.getElementById('next-hop-btn').onclick = function() {
                         revealedHops++;
                         renderPathStep();
                     };
-                    // By default, do not show any path until user clicks Display Path
+                    // By default, do not show any path until user clicks a path button
                     document.getElementById('mynetwork').style.display = 'none';
                     document.getElementById('infoBox').style.display = 'none';
                     document.getElementById('next-hop-btn').style.display = 'none';

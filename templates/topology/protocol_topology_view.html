@@ -20,49 +20,20 @@
         <button onclick="showOSPF()">Show OSPF</button>
         <button onclick="showStatic()">Show Static</button>
         <button onclick="showBasic()">Show Basic Topology</button>
+        <button onclick="updateProtocolTopology()" style="background:#007bff;color:#fff;margin-left:16px;">Refresh Topology</button>
     </div>
     <div id="network"></div>
     <script type="text/javascript">
-        // no-lint: Jinja2 template variables used below
-        var nodes = {{ nodes|tojson }};
-        nodes.forEach(function(n) {
-            if (n.type === 'router') {
-                n.group = 'router';
-            } else if (n.type === 'foreign') {
-                n.group = 'foreign';
-            }
-            delete n.x; delete n.y; delete n.fixed;
-        });
-        var edges = {{ edges|tojson }};
-        edges.forEach(function(e) {
-            e.arrows = { to: { enabled: true, scaleFactor: 1.2 } };
-            e.smooth = { type: 'continuous' };
-            e.font = {
-                size: 18,
-                align: 'top',
-                strokeWidth: 0,
-                vadjust: -18
-            };
-            if (e.label && e.label.startsWith('Static')) {
-                e.dashes = true;
-                e.color = { color: '#888', highlight: '#888', inherit: false };
-            } else if (e.label && e.label.startsWith('OSPF')) {
-                e.dashes = false;
-                e.color = { color: '#e67e22', highlight: '#e67e22', inherit: false };
-            }
-        });
-        var allEdges = edges.slice();
-        var container = document.getElementById('network');
-        // Assign curvature to parallel edges to avoid overlap
+        var network = null;
+        var allEdges = [];
+        var data = null;
         function assignEdgeCurvature(edges) {
-            // Group edges by (from,to) and (to,from) for bidirectional
             var edgeGroups = {};
             edges.forEach(function(e, idx) {
                 var key = e.from + '-' + e.to;
                 if (!edgeGroups[key]) edgeGroups[key] = [];
                 edgeGroups[key].push(e);
             });
-            // Assign roundness for each group
             Object.values(edgeGroups).forEach(function(group) {
                 if (group.length > 1) {
                     var base = 0.2;
@@ -75,7 +46,6 @@
                             type: 'curvedCW',
                             roundness: base + Math.abs(offset)
                         };
-                        // If edge is in reverse direction, use CCW
                         if (e.from > e.to) {
                             e.smooth.type = 'curvedCCW';
                         }
@@ -83,95 +53,121 @@
                 }
             });
         }
-        assignEdgeCurvature(edges);
-        var data = {
-            nodes: new vis.DataSet(nodes),
-            edges: new vis.DataSet(edges)
-        };
-        var options = {
-            layout: {
-                improvedLayout: true,
-                randomSeed: 42
-            },
-            physics: {
-                enabled: false
-            },
-            nodes: {
-                borderWidth: 2,
-                shape: 'ellipse',
-                font: {
-                    size: 20,
-                    face: 'arial',
-                    color: '#222',
-                    strokeWidth: 0,
-                    vadjust: 0,
-                    scaling: {
-                        min: 14,
-                        max: 32,
-                        label: true
+        function updateProtocolTopology() {
+            fetch('/api/protocol-topology')
+                .then(response => response.json())
+                .then(function(result) {
+                    var nodes = result.nodes;
+                    var edges = result.edges;
+                    assignEdgeCurvature(edges);
+                    if (!network) {
+                        var container = document.getElementById('network');
+                        data = {
+                            nodes: new vis.DataSet(nodes),
+                            edges: new vis.DataSet(edges)
+                        };
+                        var options = {
+                            layout: {
+                                improvedLayout: true,
+                                randomSeed: 42
+                            },
+                            physics: { enabled: false },
+                            nodes: {
+                                borderWidth: 2,
+                                shape: 'ellipse',
+                                font: {
+                                    size: 20,
+                                    face: 'arial',
+                                    color: '#222',
+                                    strokeWidth: 0,
+                                    vadjust: 0,
+                                    scaling: { min: 14, max: 32, label: true }
+                                }
+                            },
+                            groups: {
+                                router: {
+                                    color: { background: '#3498db', border: '#2980b9' },
+                                    font: { color: '#222' }
+                                },
+                                foreign: {
+                                    color: { background: '#f39c12', border: '#e67e22' },
+                                    font: { color: '#222' }
+                                }
+                            },
+                            edges: {
+                                smooth: { type: 'continuous' },
+                                font: {
+                                    size: 18,
+                                    align: 'top',
+                                    strokeWidth: 0,
+                                    vadjust: -18,
+                                    scaling: { min: 12, max: 28, label: true }
+                                },
+                                arrows: { to: { enabled: true, scaleFactor: 1.2 } }
+                            },
+                            interaction: {
+                                hover: true,
+                                dragNodes: true,
+                                dragView: true,
+                                zoomView: true,
+                                navigationButtons: true,
+                                keyboard: true
+                            },
+                            manipulation: { enabled: false }
+                        };
+                        network = new vis.Network(container, data, options);
+                    } else {
+                        data.nodes.clear();
+                        data.nodes.add(nodes);
+                        data.edges.clear();
+                        data.edges.add(edges);
                     }
-                }
-            },
-            groups: {
-                router: {
-                    color: { background: '#3498db', border: '#2980b9' },
-                    font: { color: '#222' }
-                },
-                foreign: {
-                    color: { background: '#f39c12', border: '#e67e22' },
-                    font: { color: '#222' }
-                }
-            },
-            edges: {
-                smooth: { type: 'continuous' },
-                font: {
-                    size: 18,
-                    align: 'top',
-                    strokeWidth: 0,
-                    vadjust: -18,
-                    scaling: {
-                        min: 12,
-                        max: 28,
-                        label: true
-                    }
-                },
-                arrows: { to: { enabled: true, scaleFactor: 1.2 } }
-            },
-            interaction: {
-                hover: true,
-                dragNodes: true,
-                dragView: true,
-                zoomView: true,
-                navigationButtons: true,
-                keyboard: true
-            },
-            manipulation: {
-                enabled: false
-            }
-        };
-        var network = new vis.Network(container, data, options);
-        network.on('selectNode', function(params) {
-            // Placeholder for cluster expansion logic
-        });
+                    allEdges = edges.slice();
+                    // Update protocol routes table
+                    updateProtoRoutesTable(result.proto_routes_rows);
+                });
+        }
+        function updateProtoRoutesTable(rows) {
+            var table = document.getElementById('proto-routes-table');
+            // Remove old rows except header
+            while (table.rows.length > 1) table.deleteRow(1);
+            rows.forEach(function(row) {
+                var tr = table.insertRow();
+                row.forEach(function(cell) {
+                    var td = tr.insertCell();
+                    td.textContent = cell;
+                });
+            });
+        }
         function showAll() {
-            data.edges.clear();
-            data.edges.add(allEdges);
+            if (data && allEdges) {
+                data.edges.clear();
+                data.edges.add(allEdges);
+            }
         }
         function showOSPF() {
-            data.edges.clear();
-            data.edges.add(allEdges.filter(function(e) { return e.label && e.label.startsWith('OSPF'); }));
+            if (data && allEdges) {
+                data.edges.clear();
+                data.edges.add(allEdges.filter(function(e) { return e.label && e.label.startsWith('OSPF'); }));
+            }
         }
         function showStatic() {
-            data.edges.clear();
-            data.edges.add(allEdges.filter(function(e) { return e.label && e.label.startsWith('Static'); }));
+            if (data && allEdges) {
+                data.edges.clear();
+                data.edges.add(allEdges.filter(function(e) { return e.label && e.label.startsWith('Static'); }));
+            }
         }
         function showBasic() {
-            data.edges.clear();
-            data.edges.add(allEdges.filter(function(e) { return e.dashes === true; }));
+            if (data && allEdges) {
+                data.edges.clear();
+                data.edges.add(allEdges.filter(function(e) { return e.dashes === true; }));
+            }
         }
+        updateProtocolTopology();
+        // setInterval(updateProtocolTopology, 5000); // Removed for manual refresh only
     </script>
     <h3>Protocol Routes Table</h3>
-    <table border="1" cellpadding="6" style="margin-top:24px;">
+    <table id="proto-routes-table" border="1" cellpadding="6" style="margin-top:24px;">
         <tr>
             <th>Source Router</th>
             <th>Destination</th>
@@ -180,16 +176,6 @@
             <th>Source IP</th>
             <th>Next Hop</th>
         </tr>
-        {% for row in proto_routes_rows %}
-        <tr>
-            <td>{{ row[0] }}</td>
-            <td>{{ row[1] }}</td>
-            <td>{{ row[2] }}</td>
-            <td>{{ row[3] }}</td>
-            <td>{{ row[4] }}</td>
-            <td>{{ row[5] }}</td>
-        </tr>
-        {% endfor %}
     </table>
 </body>
 </html> 

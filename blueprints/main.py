@@ -8,7 +8,7 @@ main_bp = Blueprint('main', __name__)
 @main_bp.route('/', methods=['GET', 'POST'])
 def index():
     if request.method == 'POST':
-        gns3_url = request.form.get('gns3_url')
+        gns3_url = 'http://localhost:3080'
         project_name = request.form.get('project_name')
         success, message = connect_to_gns3(gns3_url, project_name)
         flash(message, 'info' if success else 'error')

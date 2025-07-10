@@ -18,13 +18,18 @@
 <body>
     <div class="container">
         <h2>GNS3 Connection</h2>
+        <div style="display:flex;align-items:center;justify-content:center;margin-bottom:24px;">
+            {% if session['gns3_url'] and session['project_name'] %}
+                <span style="display:inline-block;width:18px;height:18px;border-radius:50%;background:#28a745;margin-right:10px;border:2px solid #222;"></span>
+                <span style="color:#28a745;font-weight:bold;">Connected</span>
+            {% else %}
+                <span style="display:inline-block;width:18px;height:18px;border-radius:50%;background:#dc3545;margin-right:10px;border:2px solid #222;"></span>
+                <span style="color:#dc3545;font-weight:bold;">Not Connected</span>
+            {% endif %}
+        </div>
         <form method="POST">
-            <label for="gns3_url">GNS3 Server URL</label>
-            <input type="text" id="gns3_url" name="gns3_url" value="http://localhost:3080" required>
-
             <label for="project_name">Project Name</label>
             <input type="text" id="project_name" name="project_name" placeholder="Enter project name..." required>
-
             <button type="submit">Connect to GNS3</button>
         </form>
         {% with messages = get_flashed_messages(with_categories=true) %}

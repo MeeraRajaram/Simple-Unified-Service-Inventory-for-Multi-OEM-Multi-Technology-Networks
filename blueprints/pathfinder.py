@@ -4,7 +4,7 @@ import sys
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from pathfinder.valid import validate_ip_and_subnet
 from pathfinder.find import find_source_and_dest_info
-from pathfinder.path import find_paths
+from pathfinder.path import find_paths, build_hop_info
 
 pathfinder_bp = Blueprint('pathfinder', __name__)
 
@@ -42,50 +42,39 @@ def pathfinder_pathvis():
     src_ip = data.get('src_ip')
     dst_ip = data.get('dst_ip')
     result = find_paths(src_ip, dst_ip)
-    if not result['primary']:
+    if not result['primary_path']:
         return jsonify({'error': 'No path found.'})
     # Helper to build vis.js nodes/edges for a path
-    def build_vis_path(path):
+    def build_vis_path(hops):
         nodes = []
         edges = []
-        for idx, hop in enumerate(path):
+        for idx, hop in enumerate(hops):
             router = hop['router_name']
-            node_id = idx
             info_lines = []
-            if idx == 0:
-                info_lines.append(f"Source IP: {hop.get('entry_ip','')}")
-                info_lines.append(f"Source IP Interface: {hop.get('entry_interface','')}")
-                info_lines.append(f"Exit Interface: {hop.get('exit_interface','')}")
-                info_lines.append(f"Exit Interface IP: {hop.get('exit_ip','')}")
-                info_lines.append(f"Loopback: {hop.get('loopback','')}")
-            elif idx == len(path)-1:
-                info_lines.append(f"Destination IP: {hop.get('entry_ip','')}")
-                info_lines.append(f"Destination IP Interface: {hop.get('entry_interface','')}")
-                info_lines.append(f"Entry Interface: {hop.get('entry_interface','')}")
-                info_lines.append(f"Entry Interface IP: {hop.get('entry_ip','')}")
-                info_lines.append(f"Loopback: {hop.get('loopback','')}")
-            else:
-                info_lines.append(f"Router Name: {router}")
-                info_lines.append(f"Entry Interface: {hop.get('entry_interface','')}")
-                info_lines.append(f"Entry Interface IP: {hop.get('entry_ip','')}")
-                info_lines.append(f"Exit Interface: {hop.get('exit_interface','')}")
-                info_lines.append(f"Exit Interface IP: {hop.get('exit_ip','')}")
-                info_lines.append(f"Loopback: {hop.get('loopback','')}")
+            info_lines.append(f"Router Name: {router}")
+            if hop.get('entry_interface'):
+                info_lines.append(f"Entry Interface: {hop.get('entry_interface')}")
+            if hop.get('entry_ip'):
+                info_lines.append(f"Entry IP: {hop.get('entry_ip')}")
+            if hop.get('exit_interface'):
+                info_lines.append(f"Exit Interface: {hop.get('exit_interface')}")
+            if hop.get('exit_ip'):
+                info_lines.append(f"Exit IP: {hop.get('exit_ip')}")
+            if hop.get('loopback'):
+                info_lines.append(f"Loopback: {hop.get('loopback')}")
+            if hop.get('connection_type'):
+                info_lines.append(f"Connection Type: {hop.get('connection_type')}")
             nodes.append({
-                'id': node_id,
+                'id': router,
                 'label': router,
                 'info': info_lines
             })
-        for idx in range(len(path)-1):
-            from_id = idx
-            to_id = idx+1
-            conn_type = path[idx]['connection_type'] or ''
-            edges.append({
-                'from': from_id,
-                'to': to_id,
-                'label': conn_type
-            })
+            if idx > 0:
+                prev_router = hops[idx-1]['router_name']
+                edges.append({'from': prev_router, 'to': router})
         return {'nodes': nodes, 'edges': edges}
     # Build all paths: primary first, then alternates
-    paths = [build_vis_path(p) for p in [result['primary'][0]] + result['alternates']]
+    primary_hops = build_hop_info(result['primary_path'])
+    alternate_hops = [build_hop_info(p) for p in result['alternates']]
+    paths = [build_vis_path(primary_hops)] + [build_vis_path(h) for h in alternate_hops]
     return jsonify({'paths': paths}) 

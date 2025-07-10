@@ -41,8 +41,7 @@ def inventory():
         alive_ips = get_alive_ips(ip, cidr)
         credentials = {ip: {'username': '', 'password': ''} for ip in alive_ips}
         return render_template('inventory.html', ip=ip, cidr=cidr, alive_ips=alive_ips, credentials=credentials, netconf_results=[])
-    # GET: show form, and if session has ip/cidr, show alive IPs
-    if ip and cidr:
-        alive_ips = get_alive_ips(ip, cidr)
-        credentials = {ip: {'username': '', 'password': ''} for ip in alive_ips}
-    return render_template('inventory.html', ip=ip, cidr=cidr, alive_ips=alive_ips, credentials=credentials, netconf_results=netconf_results) 
+    # GET: always clear session and show default view
+    session.pop('ip', None)
+    session.pop('cidr', None)
+    return render_template('inventory.html', ip='', cidr='', alive_ips=[], credentials={}, netconf_results=[]) 

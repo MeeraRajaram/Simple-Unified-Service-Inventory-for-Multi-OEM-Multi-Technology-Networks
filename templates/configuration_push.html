@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Configuration Push - Enable VRF</title>
+    <style>
+        body { font-family: Arial, sans-serif; background: #f5f5f5; }
+        .container, #interface-selection-section {
+            max-width: 800px;
+            margin: 40px auto;
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1, h3 { text-align: center; }
+        .form-group { margin-bottom: 20px; }
+        label { font-weight: bold; }
+        select, button { padding: 10px; font-size: 16px; border-radius: 4px; }
+        button { background: #007bff; color: white; border: none; cursor: pointer; }
+        button:disabled { background: #ccc; }
+        .router-section { margin-bottom: 24px; }
+        .details-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        .details-table th, .details-table td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        .details-table th { background: #f0f0f0; }
+    </style>
+</head>
+<body>
+    <div class="container" id="main-config-section">
+        <h1>Configuration Push</h1>
+        <div class="form-group">
+            <label for="pathSelect">Select Path:</label>
+            <select id="pathSelect">
+                <option value="">-- Select a path --</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <button id="checkBGPBtn" onclick="checkBGPSupport()" disabled>Check BGP Support</button>
+        </div>
+        <div class="form-group" id="enableVrfBtnGroup" style="display:none;">
+            <button id="enableVrfBtn" onclick="showInterfaceSelection()">Enable VRF</button>
+        </div>
+        <div id="message"></div>
+        <div id="pathDetails" style="display:none;"></div>
+    </div>
+
+    <!-- Interface selection section (hidden by default) -->
+    <div id="interface-selection-section" style="display:none;">
+        <h3>Select Interfaces for Routers</h3>
+        <div id="interface-selection-form"></div>
+        <button onclick="submitInterfaces()">Submit Interfaces</button>
+    </div>
+
+    <!-- VRF configuration section (hidden by default) -->
+    <div id="vrf-config-section" style="display:none;">
+        <h3>Configure VRF for L3VPN</h3>
+        <form id="vrfConfigForm">
+            <label>VRF Name: <input name="vrf_name" required></label><br>
+            <label>Route Distinguisher (RD): <input name="rd" required></label><br>
+            <label>Route Target(s) (RT): <input name="rt" required placeholder="comma-separated"></label><br>
+            <label>Description: <input name="description"></label><br>
+            <div id="vrf-router-table"></div>
+            <button type="submit">Create VRF</button>
+        </form>
+        <div id="vrfStatus"></div>
+    </div>
+
+    <div id="push-data-table-section" class="container" style="display:none; margin-top: 30px;"></div>
+    <div style="text-align:center; margin-top: 20px;">
+        <a href="/vpn-services"><button id="vpn-push-btn">VPN Push</button></a>
+    </div>
+
+    <script>
+    let loadedPaths = [];
+    let lastBGPCheckAllSupported = false;
+    let lastBGPCheckRouters = [];
+    let lastLoopbacks = {};
+
+    // Load paths on page load
+    window.addEventListener('DOMContentLoaded', function() {
+        fetch('/api/paths')
+            .then(response => response.json())
+            .then(data => {
+                if (data.success && data.paths.length > 0) {
+                    loadedPaths = data.paths;
+                    const select = document.getElementById('pathSelect');
+                    select.options.length = 1;
+                    data.paths.forEach(path => {
+                        const option = document.createElement('option');
+                        option.value = path.name;
+                        option.textContent = `${path.name} (${path.type})`;
+                        select.appendChild(option);
+                    });
+                }
+            });
+    });
+
+    // Enable/disable Check BGP button
+    document.getElementById('pathSelect').addEventListener('change', function() {
+        const selectedPath = this.value;
+        document.getElementById('checkBGPBtn').disabled = true;
+        document.getElementById('enableVrfBtnGroup').style.display = 'none';
+        if (!selectedPath) {
+            showPathDetails(selectedPath);
+            return;
+        }
+        // Call backend to populate push_data only for selected path
+        fetch('/api/select-path', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ path_name: selectedPath })
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                document.getElementById('checkBGPBtn').disabled = false;
+                showPathDetails(selectedPath);
+            } else {
+                showMessage('Error selecting path: ' + (data.error || 'Unknown error'), 'error');
+            }
+        })
+        .catch(err => {
+            showMessage('Error selecting path: ' + err.message, 'error');
+        });
+    });
+
+    // Show router details for selected path
+    function showPathDetails(pathName) {
+        const path = loadedPaths.find(p => p.name === pathName);
+        const detailsDiv = document.getElementById('pathDetails');
+        if (!path) {
+            detailsDiv.style.display = 'none';
+            detailsDiv.innerHTML = '';
+            return;
+        }
+        // Fetch loopbacks for routers
+        const routerNames = Object.keys(path.routers);
+        fetch('/api/router-loopbacks', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ router_names: routerNames })
+        })
+        .then(response => response.json())
+        .then(data => {
+            lastLoopbacks = data.loopbacks || {};
+            let html = `<table class='details-table'><tr><th>Router Name</th><th>Router IP</th><th>Loopback</th><th>Exit Interface</th></tr>`;
+            for (const [routerName, routerData] of Object.entries(path.routers)) {
+                html += `<tr><td>${routerName}</td><td>${routerData.ip || ''}</td><td>${lastLoopbacks[routerName] || ''}</td><td>${routerData.exit_interface || ''}</td></tr>`;
+            }
+            html += `</table>`;
+            detailsDiv.innerHTML = html;
+            detailsDiv.style.display = 'block';
+        });
+    }
+
+    // Check BGP support for all routers in the path
+    function checkBGPSupport() {
+        const selectedPath = document.getElementById('pathSelect').value;
+        if (!selectedPath) return;
+        const path = loadedPaths.find(p => p.name === selectedPath);
+        if (!path) return;
+        const routerNames = Object.keys(path.routers);
+        lastBGPCheckRouters = routerNames;
+        const username = prompt('Enter NETCONF username:');
+        if (!username) return showMessage('Username is required', 'error');
+        const password = prompt('Enter NETCONF password:');
+        if (!password) return showMessage('Password is required', 'error');
+        showMessage('Checking BGP support, please wait...', 'info');
+        fetch('/api/check-bgp-support', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ router_names: routerNames, username, password })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                let html = '<ul>';
+                for (const [router, supported] of Object.entries(data.results)) {
+                    html += `<li>${router}: <span style='color:${supported ? "green" : "red"}'>${supported ? "BGP Supported" : "No BGP Support"}</span></li>`;
+                }
+                html += '</ul>';
+                if (data.all_supported) {
+                    showMessage('All routers support BGP!<br>' + html, 'success');
+                    document.getElementById('enableVrfBtnGroup').style.display = 'block';
+                    lastBGPCheckAllSupported = true;
+                } else {
+                    showMessage('Some routers do not support BGP.<br>' + html + '<br>Please choose another path.', 'error');
+                    document.getElementById('enableVrfBtnGroup').style.display = 'none';
+                    lastBGPCheckAllSupported = false;
+                }
+            } else {
+                showMessage('Error: ' + data.error, 'error');
+                document.getElementById('enableVrfBtnGroup').style.display = 'none';
+                lastBGPCheckAllSupported = false;
+            }
+        })
+        .catch(error => {
+            showMessage('Error: ' + error.message, 'error');
+            document.getElementById('enableVrfBtnGroup').style.display = 'none';
+            lastBGPCheckAllSupported = false;
+        });
+    }
+
+    // Show interface selection form when Enable VRF is clicked
+    function showInterfaceSelection() {
+        if (!lastBGPCheckAllSupported) {
+            showMessage('Please check BGP support first.', 'error');
+            return;
+        }
+        document.getElementById('main-config-section').style.display = 'none';
+        document.getElementById('interface-selection-section').style.display = 'block';
+        const selectedPath = document.getElementById('pathSelect').value;
+        const path = loadedPaths.find(p => p.name === selectedPath);
+        if (!path) return;
+        window.routersInPath = Object.keys(path.routers).map(routerName => ({
+            name: routerName,
+            oem: 'Cisco' // Replace with actual OEM if available
+        }));
+        renderInterfaceForm(path);
+    }
+
+    // Render the multi-router interface selection form
+    function renderInterfaceForm(path) {
+        const formDiv = document.getElementById('interface-selection-form');
+        formDiv.innerHTML = '';
+        window.routersInPath.forEach(router => {
+            const section = document.createElement('div');
+            section.className = 'router-section';
+            section.innerHTML = `
+                <label for="intf-${router.name}">
+                    <b>${router.name}</b> (${router.oem}) – Enter interface for VRF:
+                </label>
+                <input id="intf-${router.name}" placeholder="e.g. gi1, te1/0/1" />
+            `;
+            formDiv.appendChild(section);
+        });
+    }
+
+    function normalizeInterface(userInput) {
+        const INTERFACE_MAP = {
+            'gi': 'GigabitEthernet',
+            'ge': 'GigabitEthernet',
+            'te': 'TenGigabitEthernet',
+            'fa': 'FastEthernet',
+            'lo': 'Loopback',
+            'tu': 'Tunnel',
+            'GigabitEthernet': 'GigabitEthernet',
+            'TenGigabitEthernet': 'TenGigabitEthernet',
+            'FastEthernet': 'FastEthernet',
+            'Loopback': 'Loopback',
+            'Tunnel': 'Tunnel',
+        };
+        const match = userInput.match(/^([a-zA-Z]+)([\d\/]+)$/);
+        if (!match) return userInput;
+        const intfType = match[1];
+        const intfNum = match[2];
+        const yangType = INTERFACE_MAP[intfType.toLowerCase()] || intfType;
+        return yangType + intfNum;
+    }
+
+    function submitInterfaces() {
+        const selected = {};
+        window.routersInPath.forEach(router => {
+            const input = document.getElementById(`intf-${router.name}`);
+            selected[router.name] = normalizeInterface(input.value.trim());
+        });
+        // Save for next step
+        window.selectedInterfaces = selected;
+        // Prompt for NETCONF credentials
+        const netconf_username = prompt('Enter NETCONF username:');
+        if (!netconf_username) return showMessage('Username is required', 'error');
+        const netconf_password = prompt('Enter NETCONF password:');
+        if (!netconf_password) return showMessage('Password is required', 'error');
+        // Submit interfaces and credentials to backend
+        const selectedPath = document.getElementById('pathSelect').value;
+        fetch('/api/submit-interfaces', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                path_name: selectedPath,
+                interfaces: selected,
+                netconf_username,
+                netconf_password
+            })
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                showMessage('Interfaces and credentials submitted successfully!', 'success');
+                // Hide interface selection, show table
+        document.getElementById('interface-selection-section').style.display = 'none';
+                fetchAndRenderPushDataTable();
+            } else {
+                showMessage('Error: ' + data.error, 'error');
+            }
+        })
+        .catch(err => showMessage('Error: ' + err.message, 'error'));
+    }
+
+    function showVRFConfigForm() {
+        document.getElementById('vrf-config-section').style.display = 'block';
+        // Build router/interface/IP table
+        let html = `<table class='details-table'><tr><th>Router</th><th>Interface</th><th>Assign IP/Mask (optional)</th></tr>`;
+        window.routersInPath.forEach(router => {
+            html += `<tr>
+                <td>${router.name}</td>
+                <td>${window.selectedInterfaces[router.name]}</td>
+                <td><input name="ip_${router.name}" placeholder="e.g. 10.1.1.1/30"></td>
+            </tr>`;
+        });
+        html += `</table>`;
+        document.getElementById('vrf-router-table').innerHTML = html;
+    }
+
+    document.getElementById('vrfConfigForm').onsubmit = function(e) {
+        e.preventDefault();
+        const form = e.target;
+        const vrf_name = form.vrf_name.value.trim();
+        const rd = form.rd.value.trim();
+        const rt = form.rt.value.trim();
+        const description = form.description.value.trim();
+        // Collect per-router IPs and loopback IPs
+        const routers = window.routersInPath.map(router => ({
+            name: router.name,
+            interface: window.selectedInterfaces[router.name],
+            ip: form[`ip_${router.name}`].value.trim(),
+            loopback_ip: lastLoopbacks[router.name] || ''
+        }));
+        // Prompt for NETCONF credentials
+        const username = prompt('Enter NETCONF username:');
+        if (!username) return showVRFStatus('Username is required', 'error');
+        const password = prompt('Enter NETCONF password:');
+        if (!password) return showVRFStatus('Password is required', 'error');
+        fetch('/api/create-vrf', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                vrf_name, rd, rt, description, routers, username, password
+            })
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                let html = '<ul>';
+                data.results.forEach(r => {
+                    html += `<li><b>${r.router}</b>: <span style="color:${r.success ? 'green':'red'}">${r.success ? 'Success':'Failed'}</span> - ${r.message}`;
+                    if (Array.isArray(r.vrfs)) {
+                        html += `<br><b>VRFs on ${r.router}:</b> <ul>`;
+                        r.vrfs.forEach(vrf => {
+                            html += `<li>${vrf}</li>`;
+                        });
+                        html += `</ul>`;
+                    }
+                    html += `</li>`;
+                });
+                html += '</ul>';
+                showVRFStatus('VRF configuration results:<br>' + html, 'success');
+            } else {
+                showVRFStatus('Error: ' + data.error, 'error');
+            }
+        })
+        .catch(err => showVRFStatus('Error: ' + err.message, 'error'));
+    };
+
+    function showVRFStatus(msg, type) {
+        const div = document.getElementById('vrfStatus');
+        div.innerHTML = `<div class="message ${type}">${msg}</div>`;
+    }
+
+    function showMessage(message, type) {
+        const messageDiv = document.getElementById('message');
+        messageDiv.innerHTML = `<div class="message ${type}">${message}</div>`;
+        setTimeout(() => {
+            messageDiv.innerHTML = '';
+        }, 5000);
+    }
+
+    function fetchAndRenderPushDataTable() {
+        fetch('/api/push-data')
+            .then(r => r.json())
+            .then(data => {
+                if (data.success && Array.isArray(data.rows)) {
+                    let html = `<h3>Push Data Table</h3><table class='details-table'><tr>
+                        <th>Path Name</th><th>Router Name</th><th>Router Loopback IP</th><th>BGP Support</th><th>Interface</th><th>NETCONF Username</th><th>NETCONF Password</th></tr>`;
+                    data.rows.forEach(row => {
+                        html += `<tr>
+                            <td>${row.path_name || ''}</td>
+                            <td>${row.router_name || ''}</td>
+                            <td>${row.router_loopback_ip || ''}</td>
+                            <td>${row.router_bgp_support_status || ''}</td>
+                            <td>${row.interface_entered_for_push || ''}</td>
+                            <td>${row.netconf_username || ''}</td>
+                            <td>${row.netconf_password || ''}</td>
+                        </tr>`;
+                    });
+                    html += `</table>`;
+                    document.getElementById('push-data-table-section').innerHTML = html;
+                    document.getElementById('push-data-table-section').style.display = 'block';
+                } else {
+                    document.getElementById('push-data-table-section').innerHTML = '<b>No data found.</b>';
+                    document.getElementById('push-data-table-section').style.display = 'block';
+                }
+            })
+            .catch(err => {
+                document.getElementById('push-data-table-section').innerHTML = '<b>Error loading table.</b>';
+                document.getElementById('push-data-table-section').style.display = 'block';
+            });
+    }
+    </script>
+</body>
+</html> 

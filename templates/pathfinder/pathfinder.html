@@ -13,6 +13,34 @@
         .result { margin-top: 24px; font-size: 1.1rem; }
         .error { color: #c00; }
         .success { color: #090; }
+        #path-controls { 
+            text-align: center; 
+            padding: 15px; 
+            background: #f8f9fa; 
+            border-radius: 8px; 
+            margin: 20px 0;
+        }
+        #path-controls button { 
+            margin: 0 5px; 
+            padding: 10px 20px;
+        }
+        #alt-path-dropdown { 
+            padding: 8px; 
+            margin: 0 5px; 
+            border-radius: 5px; 
+            border: 1px solid #bbb; 
+        }
+        #mynetwork { 
+            margin: 20px auto; 
+            max-width: 800px; 
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        #infoBox { 
+            margin: 20px auto; 
+            max-width: 800px; 
+            border-radius: 8px;
+        }
     </style>
 </head>
 <body>
@@ -70,9 +98,11 @@
                 <button id="alt-path-btn">Show Alt Path</button>
             </span>
             <button id="next-hop-btn" style="display:none;margin-left:12px;">Next Hop</button>
+            <button id="enable-vpn-btn" style="margin-left:12px;background-color:#28a745;color:white;border:none;padding:8px 16px;border-radius:4px;cursor:pointer;">Enable VPN</button>
+            <button id="test-json-btn" style="margin-left:12px;background-color:#ffc107;color:black;border:none;padding:8px 16px;border-radius:4px;cursor:pointer;">Test JSON</button>
         </div>
     </div>
-    <div id="mynetwork" style="width:100%;height:500px;border:1px solid lightgray;display:none;"></div>
+    <div id="mynetwork" style="width:100%;height:500px;border:1px solid lightgray;display:none;margin-top:20px;"></div>
     <div id="infoBox" style="margin-top:15px;padding:15px;border:1px solid #007bff;background-color:#f1f9ff;font-family:Arial,sans-serif;display:none;">
       <div class="info-title" id="infoTitle">Node Info</div>
       <div id="infoContent"></div>
@@ -168,6 +198,7 @@
                         altDropdown.appendChild(opt);
                     }
                     document.getElementById('path-controls').style.display = (allPaths.length > 0) ? 'block' : 'none';
+                    console.log('Paths found:', allPaths.length); // Debug log
                     document.getElementById('primary-path-btn').onclick = function() {
                         currentPathIdx = 0;
                         revealedHops = 1;
@@ -184,6 +215,12 @@
                         revealedHops++;
                         renderPathStep();
                     };
+                    document.getElementById('enable-vpn-btn').onclick = function() {
+                        sendPathsToConfigurationPush();
+                    };
+                    document.getElementById('test-json-btn').onclick = function() {
+                        testJsonEndpoint();
+                    };
                     // By default, do not show any path until user clicks a path button
                     document.getElementById('mynetwork').style.display = 'none';
                     document.getElementById('infoBox').style.display = 'none';
@@ -193,11 +230,13 @@
         }
         function renderPathStep() {
             const path = allPaths[currentPathIdx];
+            console.log('Rendering path:', currentPathIdx, 'with', revealedHops, 'hops'); // Debug log
             // Only show up to revealedHops nodes/edges
             const nodes = new vis.DataSet(path.nodes.slice(0, revealedHops));
             const edges = new vis.DataSet(path.edges.slice(0, Math.max(0, revealedHops-1)));
             const container = document.getElementById('mynetwork');
             container.style.display = 'block';
+            console.log('Network container displayed'); // Debug log
             const data = { nodes, edges };
             const options = {
                 interaction: { hover: true },
@@ -229,6 +268,220 @@
             } else {
                 document.getElementById('next-hop-btn').style.display = 'none';
             }
+        }
+        
+        function sendPathsToConfigurationPush() {
+            if (allPaths.length === 0) {
+                alert('No paths available. Please find paths first.');
+                return;
+            }
+            
+            // Convert paths to the format expected by configuration push
+            const pathsToSend = [];
+            
+            // Add primary path
+            if (allPaths.length > 0) {
+                const primaryPath = {
+                    name: 'Primary Path',
+                    type: 'primary',
+                    routers: {},
+                    total_cost: allPaths[0].total_cost || null
+                };
+                
+                // Extract router information from primary path
+                allPaths[0].nodes.forEach((node, index) => {
+                    if (node.info && node.info.length > 0) {
+                        const routerName = node.label;
+                        const routerInfo = node.info.join(' ');
+                        console.log('Processing node:', routerName, 'with info:', routerInfo);
+                        
+                        // Try different patterns for IP extraction
+                        let ipMatch = routerInfo.match(/IP:\s*([^\s]+)/);
+                        if (!ipMatch) {
+                            ipMatch = routerInfo.match(/ip[:\s]+([^\s]+)/i);
+                        }
+                        
+                        let interfaceMatch = routerInfo.match(/Interface:\s*([^\s]+)/);
+                        if (!interfaceMatch) {
+                            interfaceMatch = routerInfo.match(/interface[:\s]+([^\s]+)/i);
+                        }
+                        
+                        if (ipMatch) {
+                            const ip = ipMatch[1];
+                            const exitInterface = interfaceMatch ? interfaceMatch[1] : null;
+                            primaryPath.routers[routerName] = {
+                                ip: ip,
+                                exit_interface: exitInterface
+                            };
+                            console.log('Added router:', routerName, 'IP:', ip, 'Interface:', exitInterface);
+                        } else {
+                            console.log('No IP found for router:', routerName);
+                        }
+                    }
+                });
+                
+                pathsToSend.push(primaryPath);
+            }
+            
+            // Add alternate paths
+            for (let i = 1; i < allPaths.length; i++) {
+                const altPath = {
+                    name: `Alternate Path ${i}`,
+                    type: 'alternate',
+                    routers: {},
+                    total_cost: allPaths[i].total_cost || null
+                };
+                
+                // Extract router information from alternate path
+                allPaths[i].nodes.forEach((node, index) => {
+                    if (node.info && node.info.length > 0) {
+                        const routerName = node.label;
+                        const routerInfo = node.info.join(' ');
+                        console.log('Processing alt node:', routerName, 'with info:', routerInfo);
+                        
+                        // Try different patterns for IP extraction
+                        let ipMatch = routerInfo.match(/IP:\s*([^\s]+)/);
+                        if (!ipMatch) {
+                            ipMatch = routerInfo.match(/ip[:\s]+([^\s]+)/i);
+                        }
+                        
+                        let interfaceMatch = routerInfo.match(/Interface:\s*([^\s]+)/);
+                        if (!interfaceMatch) {
+                            interfaceMatch = routerInfo.match(/interface[:\s]+([^\s]+)/i);
+                        }
+                        
+                        if (ipMatch) {
+                            const ip = ipMatch[1];
+                            const exitInterface = interfaceMatch ? interfaceMatch[1] : null;
+                            altPath.routers[routerName] = {
+                                ip: ip,
+                                exit_interface: exitInterface
+                            };
+                            console.log('Added alt router:', routerName, 'IP:', ip, 'Interface:', exitInterface);
+                        } else {
+                            console.log('No IP found for alt router:', routerName);
+                        }
+                    }
+                });
+                
+                pathsToSend.push(altPath);
+            }
+            
+            // Debug: Log what we're sending
+            console.log('Sending paths to configuration push:', pathsToSend);
+            
+            // Check if we have any valid paths
+            const validPaths = pathsToSend.filter(path => Object.keys(path.routers).length > 0);
+            if (validPaths.length === 0) {
+                alert('No valid router information found in paths. Cannot send to Configuration Push.');
+                return;
+            }
+            
+            // Send paths to configuration push
+            const requestData = JSON.stringify({ paths: pathsToSend });
+            console.log('Request data string:', requestData);
+            
+            // Try fetch first, fallback to XMLHttpRequest if needed
+            try {
+                fetch('/api/receive-paths', {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json; charset=utf-8',
+                        'Accept': 'application/json'
+                    },
+                    body: requestData
+                })
+                .then(response => {
+                    console.log('Response status:', response.status);
+                    console.log('Response headers:', response.headers);
+                    return response.json();
+                })
+                .then(data => {
+                    console.log('Response data:', data);
+                    if (data.success) {
+                        alert('Paths sent to Configuration Push successfully! Redirecting...');
+                        // Redirect to configuration push page
+                        window.location.href = '/configuration-push';
+                    } else {
+                        alert('Error sending paths: ' + (data.error || 'Unknown error'));
+                    }
+                })
+                .catch(error => {
+                    console.error('Fetch error:', error);
+                    // Fallback to XMLHttpRequest
+                    sendWithXMLHttpRequest();
+                });
+            } catch (error) {
+                console.error('Fetch setup error:', error);
+                // Fallback to XMLHttpRequest
+                sendWithXMLHttpRequest();
+            }
+            
+            function sendWithXMLHttpRequest() {
+                const xhr = new XMLHttpRequest();
+                xhr.open('POST', '/api/receive-paths', true);
+                xhr.setRequestHeader('Content-Type', 'application/json');
+                xhr.setRequestHeader('Accept', 'application/json');
+                
+                xhr.onreadystatechange = function() {
+                    if (xhr.readyState === 4) {
+                        console.log('XHR Response status:', xhr.status);
+                        console.log('XHR Response headers:', xhr.getAllResponseHeaders());
+                        
+                        if (xhr.status === 200) {
+                            try {
+                                const data = JSON.parse(xhr.responseText);
+                                console.log('XHR Response data:', data);
+                                if (data.success) {
+                                    alert('Paths sent to Configuration Push successfully! Redirecting...');
+                                    window.location.href = '/configuration-push';
+                                } else {
+                                    alert('Error sending paths: ' + (data.error || 'Unknown error'));
+                                }
+                            } catch (parseError) {
+                                console.error('XHR JSON parse error:', parseError);
+                                alert('Error parsing response from server');
+                            }
+                        } else {
+                            console.error('XHR Error:', xhr.status, xhr.statusText);
+                            alert('Error sending paths to Configuration Push (XHR)');
+                        }
+                    }
+                };
+                
+                xhr.onerror = function() {
+                    console.error('XHR Network error');
+                    alert('Network error sending paths to Configuration Push');
+                };
+                
+                xhr.send(requestData);
+            }
+        }
+        
+        function testJsonEndpoint() {
+            console.log('Testing JSON endpoint...');
+            const testData = { test: 'data', message: 'Hello from pathfinder' };
+            
+            fetch('/configuration-push/test', {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json; charset=utf-8',
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify(testData)
+            })
+            .then(response => {
+                console.log('Test response status:', response.status);
+                return response.json();
+            })
+            .then(data => {
+                console.log('Test response data:', data);
+                alert('JSON test result: ' + (data.success ? 'SUCCESS' : 'FAILED') + '\n' + data.message);
+            })
+            .catch(error => {
+                console.error('Test error:', error);
+                alert('JSON test failed: ' + error.message);
+            });
         }
     </script>
 </body>

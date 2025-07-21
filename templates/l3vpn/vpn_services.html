@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>VPN Services</title>
+    <style>
+        body { font-family: Arial, sans-serif; background: #f5f5f5; }
+        .container { max-width: 800px; margin: 40px auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1 { text-align: center; }
+        .back-link { display: block; margin: 20px auto; text-align: center; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>VPN Services</h1>
+        <p>Welcome to the VPN Services page. Here you can manage and push L3VPN configurations.</p>
+        <a class="back-link" href="/configuration-push">&larr; Back to Configuration Push</a>
+    </div>
+    <form id="vrfForm" style="margin-top: 30px;">
+        <h2>Enter VRF Details</h2>
+        <label>VRF Name: <input name="vrf_name" required></label><br><br>
+        <label>Route Distinguisher (RD): <input name="rd" required></label><br><br>
+        <label>RT Import (e.g. 65000:1): <input name="rt_import" required placeholder="65000:1"></label><br><br>
+        <label>RT Export (e.g. 65000:2): <input name="rt_export" required placeholder="65000:2"></label><br><br>
+        <small>Format: RT Import and RT Export will be sent as 'import,65000:1 export,65000:2'</small><br><br>
+        <label>Description: <input name="description"></label><br><br>
+        <label>NETCONF Username: <input name="username" required></label><br><br>
+        <label>NETCONF Password: <input name="password" type="password" required></label><br><br>
+        <button type="submit">Submit VRF Details</button>
+    </form>
+    <div id="vrf-message"></div>
+    <div id="display-config-section" style="display:none; margin-top: 30px; text-align:center;">
+        <button id="display-config-btn">Display Config</button>
+    </div>
+    <div id="vrf-table-section" style="display:none; margin-top: 30px;"></div>
+    <div id="push-vrf-section" style="display:none; margin-top: 30px; text-align:center;">
+        <button id="push-vrf-btn">Push VRF to Routers</button>
+    </div>
+    <div id="push-vrf-result" style="margin-top: 20px;"></div>
+    <script>
+    document.getElementById('vrfForm').onsubmit = function(e) {
+        e.preventDefault();
+        const form = e.target;
+        // Combine RT Import and Export into correct format
+        const rt_import = form.rt_import.value.trim();
+        const rt_export = form.rt_export.value.trim();
+        let rt = '';
+        if (rt_import) rt += `import,${rt_import}`;
+        if (rt_export) rt += (rt ? ' ' : '') + `export,${rt_export}`;
+        const data = {
+            vrf_name: form.vrf_name.value,
+            rd: form.rd.value,
+            rt: rt,
+            description: form.description.value,
+            username: form.username.value,
+            password: form.password.value
+        };
+        fetch('/api/vrf-details', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        })
+        .then(r => r.json())
+        .then(resp => {
+            if (resp.success) {
+                document.getElementById('vrf-message').innerHTML = '<span style="color:green">VRF details saved!</span>';
+                document.getElementById('display-config-section').style.display = 'block';
+            } else {
+                document.getElementById('vrf-message').innerHTML = '<span style="color:red">' + (resp.error || 'Error') + '</span>';
+            }
+        })
+        .catch(err => {
+            document.getElementById('vrf-message').innerHTML = '<span style="color:red">' + err.message + '</span>';
+        });
+    };
+    document.getElementById('display-config-btn').onclick = function() {
+        fetch('/api/vrf-table')
+            .then(r => r.json())
+            .then(data => {
+                if (data.success && Array.isArray(data.rows)) {
+                    let html = `<h3>VRF DB Table</h3><table border="1" style="width:100%;"><tr>
+                        <th>Router Name</th><th>Router Loopback IP</th><th>VRF Name</th><th>RD</th><th>RT</th><th>Description</th><th>Username</th><th>Password</th></tr>`;
+                    data.rows.forEach(row => {
+                        html += `<tr>`;
+                        row.forEach(cell => html += `<td>${cell || ''}</td>`);
+                        html += `</tr>`;
+                    });
+                    html += `</table>`;
+                    document.getElementById('vrf-table-section').innerHTML = html;
+                    document.getElementById('vrf-table-section').style.display = 'block';
+                    document.getElementById('push-vrf-section').style.display = 'block';
+                } else {
+                    document.getElementById('vrf-table-section').innerHTML = '<b>No data found.</b>';
+                    document.getElementById('vrf-table-section').style.display = 'block';
+                    document.getElementById('push-vrf-section').style.display = 'none';
+                }
+            })
+            .catch(err => {
+                document.getElementById('vrf-table-section').innerHTML = '<b>Error loading table.</b>';
+                document.getElementById('vrf-table-section').style.display = 'block';
+                document.getElementById('push-vrf-section').style.display = 'none';
+            });
+    };
+    document.getElementById('push-vrf-btn').onclick = function() {
+        document.getElementById('push-vrf-result').innerHTML = 'Pushing VRF to routers...';
+        fetch('/api/push-vrf', { method: 'POST' })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success && Array.isArray(data.results)) {
+                    let html = '<h3>Push Results</h3><ul>';
+                    data.results.forEach(r => {
+                        html += `<li><b>${r.router}</b>: <span style='color:${r.success ? "green" : "red"}'>${r.success ? "Success" : "Failed"}</span> - ${r.message}</li>`;
+                    });
+                    html += '</ul>';
+                    document.getElementById('push-vrf-result').innerHTML = html;
+                } else {
+                    document.getElementById('push-vrf-result').innerHTML = '<b>Error: ' + (data.error || 'Unknown error') + '</b>';
+                }
+            })
+            .catch(err => {
+                document.getElementById('push-vrf-result').innerHTML = '<b>Error: ' + err.message + '</b>';
+            });
+    };
+    </script>
+</body>
+</html> 

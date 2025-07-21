@@ -3,6 +3,7 @@ from rib.db_utils import rib_db_manage
 from rib.db_parser import parse_and_dispatch
 from topo.topo_inip import build_and_store_inip_table
 from topo.topo_connections import process_and_save_connections
+import subprocess
 
 rib_bp = Blueprint('rib', __name__)
  
@@ -20,6 +21,11 @@ def rib_refresh():
     parse_and_dispatch()   # This will scan all routers and update the RIB table
     build_and_store_inip_table()  # Repopulate inip.db from RIB
     process_and_save_connections()  # Repopulate directconndb and protodb from RIB
+    # Sync VRF DB as well
+    try:
+        subprocess.run(['python3', 'configuration_push/build_vrf_db.py'], check=True)
+    except Exception as e:
+        print(f"Failed to sync VRF DB: {e}")
     return redirect(url_for('rib.rib'))
 
 @rib_bp.route('/rib/history', methods=['GET'])

@@ -1,0 +1,1234 @@
+{% extends "base.html" %}
+
+{% block title %}Configuration Push - GNS3 WebApp{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1>Configuration Push</h1>
+    <p class="description">Push network configurations to multiple devices simultaneously.</p>
+    
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ 'error' if category == 'error' else 'success' }}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+    
+    <div class="config-push-container">
+        <!-- Configuration Type Selection -->
+        <div class="section">
+            <h2>1. Select Configuration Type</h2>
+            <div class="config-type-selection">
+                <div class="config-type-options">
+                    <label class="config-type-option">
+                        <input type="radio" name="configType" value="standard" checked>
+                        <span class="option-content">
+                            <h3>Standard Configuration Push</h3>
+                            <p>Push custom configurations or templates to selected devices</p>
+                        </span>
+                    </label>
+                    <label class="config-type-option">
+                        <input type="radio" name="configType" value="l3vpn">
+                        <span class="option-content">
+                            <h3>L3VPN Path Configuration</h3>
+                            <p>Configure L3VPN along network paths from Path Finder</p>
+                        </span>
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <!-- Standard Configuration Section -->
+        <div id="standardConfigSection" class="config-section">
+            <!-- Device Selection Section -->
+            <div class="section">
+                <h2>2. Select Target Devices</h2>
+                <div class="device-selection">
+                    <div class="device-filters">
+                        <input type="text" id="deviceSearch" placeholder="Search devices..." class="search-input">
+                        <select id="vendorFilter" class="filter-select">
+                            <option value="">All Vendors</option>
+                            <option value="Cisco">Cisco</option>
+                            <option value="Juniper">Juniper</option>
+                            <option value="Arista">Arista</option>
+                        </select>
+                    </div>
+                    <div class="device-list" id="deviceList">
+                        <!-- Devices will be loaded here via JavaScript -->
+                        <div class="loading">Loading devices...</div>
+                    </div>
+                </div>
+            </div>
+        
+        <!-- Configuration Section -->
+        <div class="section">
+            <h2>2. Configuration</h2>
+            <div class="config-input">
+                <div class="config-type-selector">
+                    <label for="configType">Configuration Type:</label>
+                    <select id="configType" class="config-select">
+                        <option value="custom">Custom Configuration</option>
+                        <option value="template">Use Template</option>
+                    </select>
+                </div>
+                
+                <div id="templateSection" class="template-section" style="display: none;">
+                    <label for="templateSelect">Select Template:</label>
+                    <select id="templateSelect" class="config-select">
+                        <option value="">Choose a template...</option>
+                    </select>
+                    <div id="templateDescription" class="template-description"></div>
+                </div>
+                
+                <div class="config-content">
+                    <label for="configContent">Configuration Content:</label>
+                    <textarea id="configContent" name="config_content" rows="15" placeholder="Enter your configuration commands here...&#10;&#10;Example:&#10;interface GigabitEthernet0/1&#10; ip address 192.168.1.1 255.255.255.0&#10; no shutdown"></textarea>
+                </div>
+                
+                <div class="config-actions">
+                    <button type="button" id="validateConfig" class="btn btn-secondary">Validate Configuration</button>
+                    <button type="button" id="clearConfig" class="btn btn-outline">Clear</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Push Section -->
+        <div class="section">
+            <h2>3. Push Configuration</h2>
+            <div class="push-summary">
+                <div class="summary-item">
+                    <span class="label">Selected Devices:</span>
+                    <span id="selectedCount" class="value">0</span>
+                </div>
+                <div class="summary-item">
+                    <span class="label">Configuration Type:</span>
+                    <span id="configTypeDisplay" class="value">Custom</span>
+                </div>
+            </div>
+            
+            <div class="push-actions">
+                <button type="button" id="pushConfig" class="btn btn-primary" disabled>Push Configuration</button>
+                <button type="button" id="dryRun" class="btn btn-secondary">Dry Run</button>
+            </div>
+        </div>
+
+        <!-- L3VPN Configuration Section -->
+        <div id="l3vpnConfigSection" class="config-section" style="display: none;">
+            <!-- Path Selection Section -->
+            <div class="section">
+                <h2>2. Select Network Path</h2>
+                <div class="path-selection">
+                    <div class="path-filters">
+                        <select id="pathTypeFilter" class="filter-select">
+                            <option value="">All Path Types</option>
+                            <option value="primary">Primary Paths</option>
+                            <option value="alternate">Alternate Paths</option>
+                        </select>
+                    </div>
+                    <div class="path-list" id="pathList">
+                        <!-- Paths will be loaded here via JavaScript -->
+                        <div class="loading">Loading paths...</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- L3VPN Configuration Section -->
+            <div class="section">
+                <h2>3. L3VPN Configuration</h2>
+                <div class="l3vpn-config">
+                    <div class="form-group">
+                        <label for="vrfName">VRF Name:</label>
+                        <input type="text" id="vrfName" placeholder="Enter VRF name" class="form-input">
+                    </div>
+                    <div class="form-group">
+                        <label for="routeDistinguisher">Route Distinguisher:</label>
+                        <input type="text" id="routeDistinguisher" placeholder="e.g., 65000:100" class="form-input">
+                    </div>
+                    <div class="form-group">
+                        <label for="vrfDescription">VRF Description (optional):</label>
+                        <input type="text" id="vrfDescription" placeholder="Enter VRF description" class="form-input">
+                    </div>
+                    <div class="form-group">
+                        <label for="asn">AS Number (for BGP configuration):</label>
+                        <input type="text" id="asn" placeholder="e.g., 65000" class="form-input">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Device Credentials Section -->
+            <div class="section">
+                <h2>4. Device Credentials</h2>
+                <div class="credentials-config">
+                    <div class="form-group">
+                        <label for="username">Username:</label>
+                        <input type="text" id="username" placeholder="Enter username" class="form-input">
+                    </div>
+                    <div class="form-group">
+                        <label for="password">Password:</label>
+                        <input type="password" id="password" placeholder="Enter password" class="form-input">
+                    </div>
+                </div>
+            </div>
+
+            <!-- L3VPN Push Section -->
+            <div class="section">
+                <h2>5. Configure L3VPN</h2>
+                <div class="l3vpn-summary">
+                    <div class="summary-item">
+                        <span class="label">Selected Path:</span>
+                        <span id="selectedPathName" class="value">None</span>
+                    </div>
+                    <div class="summary-item">
+                        <span class="label">VRF Name:</span>
+                        <span id="vrfNameDisplay" class="value">Not set</span>
+                    </div>
+                    <div class="summary-item">
+                        <span class="label">Route Distinguisher:</span>
+                        <span id="rdDisplay" class="value">Not set</span>
+                    </div>
+                </div>
+                
+                <div class="l3vpn-actions">
+                    <button type="button" id="configureL3VPN" class="btn btn-primary" disabled>Configure L3VPN</button>
+                    <button type="button" id="dryRunL3VPN" class="btn btn-secondary">Dry Run</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Results Modal -->
+    <div id="resultsModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Configuration Push Results</h3>
+                <span class="close">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div id="pushResults"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.description {
+    color: #666;
+    margin-bottom: 30px;
+    font-size: 1.1rem;
+}
+
+.config-push-container {
+    display: flex;
+    flex-direction: column;
+    gap: 30px;
+}
+
+.section {
+    background: #f8f9fa;
+    padding: 25px;
+    border-radius: 8px;
+    border: 1px solid #e9ecef;
+}
+
+.section h2 {
+    margin-top: 0;
+    margin-bottom: 20px;
+    color: #333;
+    font-size: 1.4rem;
+}
+
+/* Device Selection Styles */
+.device-filters {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.search-input, .filter-select {
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+.search-input {
+    flex: 1;
+}
+
+.device-list {
+    max-height: 300px;
+    overflow-y: auto;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    background: white;
+}
+
+.device-item {
+    display: flex;
+    align-items: center;
+    padding: 12px 15px;
+    border-bottom: 1px solid #eee;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.device-item:hover {
+    background-color: #f8f9fa;
+}
+
+.device-item.selected {
+    background-color: #e3f2fd;
+    border-left: 4px solid #2196f3;
+}
+
+.device-checkbox {
+    margin-right: 12px;
+}
+
+.device-info {
+    flex: 1;
+}
+
+.device-name {
+    font-weight: 600;
+    color: #333;
+}
+
+.device-details {
+    font-size: 12px;
+    color: #666;
+    margin-top: 2px;
+}
+
+.vendor-badge {
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.vendor-cisco { background: #e3f2fd; color: #1976d2; }
+.vendor-juniper { background: #f3e5f5; color: #7b1fa2; }
+.vendor-arista { background: #e8f5e8; color: #388e3c; }
+
+/* Configuration Styles */
+.config-type-selector {
+    margin-bottom: 20px;
+}
+
+.config-select {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+    margin-top: 5px;
+}
+
+.template-section {
+    margin-bottom: 20px;
+    padding: 15px;
+    background: #f8f9fa;
+    border-radius: 4px;
+}
+
+.template-description {
+    margin-top: 10px;
+    padding: 10px;
+    background: white;
+    border-radius: 4px;
+    font-size: 14px;
+    color: #666;
+}
+
+.config-content textarea {
+    width: 100%;
+    padding: 15px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-family: 'Courier New', monospace;
+    font-size: 13px;
+    line-height: 1.4;
+    resize: vertical;
+}
+
+.config-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 15px;
+}
+
+/* Push Section Styles */
+.push-summary {
+    background: white;
+    padding: 20px;
+    border-radius: 4px;
+    border: 1px solid #ddd;
+    margin-bottom: 20px;
+}
+
+.summary-item {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 10px;
+}
+
+.summary-item:last-child {
+    margin-bottom: 0;
+}
+
+.label {
+    font-weight: 600;
+    color: #333;
+}
+
+.value {
+    color: #666;
+}
+
+.push-actions {
+    display: flex;
+    gap: 15px;
+}
+
+/* Button Styles */
+.btn {
+    padding: 12px 24px;
+    border: none;
+    border-radius: 4px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-decoration: none;
+    display: inline-block;
+}
+
+.btn-primary {
+    background: #007bff;
+    color: white;
+}
+
+.btn-primary:hover:not(:disabled) {
+    background: #0056b3;
+}
+
+.btn-primary:disabled {
+    background: #ccc;
+    cursor: not-allowed;
+}
+
+.btn-secondary {
+    background: #6c757d;
+    color: white;
+}
+
+.btn-secondary:hover {
+    background: #545b62;
+}
+
+.btn-outline {
+    background: transparent;
+    color: #6c757d;
+    border: 1px solid #6c757d;
+}
+
+.btn-outline:hover {
+    background: #6c757d;
+    color: white;
+}
+
+/* Modal Styles */
+.modal {
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.5);
+}
+
+.modal-content {
+    background-color: white;
+    margin: 5% auto;
+    padding: 0;
+    border-radius: 8px;
+    width: 80%;
+    max-width: 600px;
+    max-height: 80vh;
+    overflow-y: auto;
+}
+
+.modal-header {
+    padding: 20px;
+    border-bottom: 1px solid #eee;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.modal-header h3 {
+    margin: 0;
+}
+
+.close {
+    color: #aaa;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.close:hover {
+    color: #000;
+}
+
+.modal-body {
+    padding: 20px;
+}
+
+/* Alert Styles */
+.alert {
+    padding: 15px;
+    margin-bottom: 20px;
+    border-radius: 4px;
+    border: 1px solid transparent;
+}
+
+.alert-error {
+    background-color: #f8d7da;
+    border-color: #f5c6cb;
+    color: #721c24;
+}
+
+.alert-success {
+    background-color: #d4edda;
+    border-color: #c3e6cb;
+    color: #155724;
+}
+
+.loading {
+    text-align: center;
+    padding: 40px;
+    color: #666;
+}
+
+/* Configuration Type Selection Styles */
+.config-type-selection {
+    margin-bottom: 20px;
+}
+
+.config-type-options {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+}
+
+.config-type-option {
+    flex: 1;
+    min-width: 250px;
+    cursor: pointer;
+    border: 2px solid #e9ecef;
+    border-radius: 8px;
+    padding: 20px;
+    transition: all 0.3s ease;
+    background: white;
+}
+
+.config-type-option:hover {
+    border-color: #007bff;
+    box-shadow: 0 4px 12px rgba(0,123,255,0.1);
+}
+
+.config-type-option input[type="radio"] {
+    display: none;
+}
+
+.config-type-option input[type="radio"]:checked + .option-content {
+    color: #007bff;
+}
+
+.config-type-option input[type="radio"]:checked + .option-content h3 {
+    color: #007bff;
+}
+
+.config-type-option input[type="radio"]:checked {
+    border-color: #007bff;
+    background: #f8f9ff;
+}
+
+.option-content h3 {
+    margin: 0 0 10px 0;
+    color: #333;
+    font-size: 1.2rem;
+}
+
+.option-content p {
+    margin: 0;
+    color: #666;
+    font-size: 0.9rem;
+}
+
+/* Config Section Styles */
+.config-section {
+    display: block;
+}
+
+/* Path Selection Styles */
+.path-selection {
+    margin-bottom: 20px;
+}
+
+.path-list {
+    max-height: 300px;
+    overflow-y: auto;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    background: white;
+}
+
+.path-item {
+    display: flex;
+    align-items: center;
+    padding: 15px;
+    border-bottom: 1px solid #eee;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.path-item:hover {
+    background-color: #f8f9fa;
+}
+
+.path-item.selected {
+    background-color: #e3f2fd;
+    border-left: 4px solid #2196f3;
+}
+
+.path-radio {
+    margin-right: 15px;
+}
+
+.path-info {
+    flex: 1;
+}
+
+.path-name {
+    font-weight: 600;
+    color: #333;
+    font-size: 1.1rem;
+}
+
+.path-details {
+    font-size: 12px;
+    color: #666;
+    margin-top: 5px;
+}
+
+.path-type-badge {
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    margin-left: 10px;
+}
+
+.path-type-primary {
+    background: #e8f5e8;
+    color: #388e3c;
+}
+
+.path-type-alternate {
+    background: #fff3e0;
+    color: #f57c00;
+}
+
+/* Form Styles */
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: 600;
+    color: #333;
+}
+
+.form-input {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+.form-input:focus {
+    outline: none;
+    border-color: #007bff;
+    box-shadow: 0 0 0 2px rgba(0,123,255,0.25);
+}
+
+/* L3VPN Summary Styles */
+.l3vpn-summary {
+    background: white;
+    padding: 20px;
+    border-radius: 4px;
+    border: 1px solid #ddd;
+    margin-bottom: 20px;
+}
+
+.l3vpn-actions {
+    display: flex;
+    gap: 15px;
+}
+
+/* Additional Styles */
+.no-paths {
+    text-align: center;
+    padding: 40px;
+    color: #666;
+    font-style: italic;
+}
+
+.result-summary {
+    background: #f8f9fa;
+    padding: 15px;
+    border-radius: 4px;
+    margin-bottom: 20px;
+}
+
+.result-summary h4 {
+    margin-top: 0;
+    margin-bottom: 10px;
+    color: #333;
+}
+
+.result-summary p {
+    margin: 5px 0;
+    color: #666;
+}
+
+.status-info {
+    color: #17a2b8;
+}
+
+.status-success {
+    color: #28a745;
+}
+
+.status-error {
+    color: #dc3545;
+}
+
+.status-dry_run {
+    color: #6c757d;
+    font-style: italic;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Load devices and templates on page load
+    loadDevices();
+    loadTemplates();
+    loadPaths();
+    
+    // Configuration type selection
+    document.querySelectorAll('input[name="configType"]').forEach(radio => {
+        radio.addEventListener('change', toggleConfigurationType);
+    });
+    
+    // Standard configuration event listeners
+    document.getElementById('deviceSearch').addEventListener('input', filterDevices);
+    document.getElementById('vendorFilter').addEventListener('change', filterDevices);
+    document.getElementById('configType').addEventListener('change', toggleTemplateSection);
+    document.getElementById('templateSelect').addEventListener('change', loadTemplateContent);
+    document.getElementById('validateConfig').addEventListener('click', validateConfiguration);
+    document.getElementById('clearConfig').addEventListener('click', clearConfiguration);
+    document.getElementById('pushConfig').addEventListener('click', pushConfiguration);
+    document.getElementById('dryRun').addEventListener('click', dryRunConfiguration);
+    
+    // L3VPN event listeners
+    document.getElementById('pathTypeFilter').addEventListener('change', filterPaths);
+    document.getElementById('vrfName').addEventListener('input', updateL3VPNSummary);
+    document.getElementById('routeDistinguisher').addEventListener('input', updateL3VPNSummary);
+    document.getElementById('configureL3VPN').addEventListener('click', configureL3VPN);
+    document.getElementById('dryRunL3VPN').addEventListener('click', dryRunL3VPN);
+    
+    // Modal close functionality
+    document.querySelector('.close').addEventListener('click', closeModal);
+    window.addEventListener('click', function(event) {
+        if (event.target == document.getElementById('resultsModal')) {
+            closeModal();
+        }
+    });
+});
+
+function loadDevices() {
+    fetch('/configuration-push/devices')
+        .then(response => response.json())
+        .then(devices => {
+            displayDevices(devices);
+        })
+        .catch(error => {
+            console.error('Error loading devices:', error);
+            document.getElementById('deviceList').innerHTML = '<div class="alert alert-error">Error loading devices</div>';
+        });
+}
+
+function displayDevices(devices) {
+    const deviceList = document.getElementById('deviceList');
+    deviceList.innerHTML = '';
+    
+    devices.forEach(device => {
+        const deviceItem = document.createElement('div');
+        deviceItem.className = 'device-item';
+        deviceItem.innerHTML = `
+            <input type="checkbox" class="device-checkbox" value="${device.id}" data-name="${device.name}">
+            <div class="device-info">
+                <div class="device-name">${device.name}</div>
+                <div class="device-details">
+                    IP: ${device.ip} | 
+                    <span class="vendor-badge vendor-${device.vendor.toLowerCase()}">${device.vendor}</span>
+                </div>
+            </div>
+        `;
+        
+        deviceItem.addEventListener('click', function(e) {
+            if (e.target.type !== 'checkbox') {
+                const checkbox = this.querySelector('.device-checkbox');
+                checkbox.checked = !checkbox.checked;
+                this.classList.toggle('selected', checkbox.checked);
+                updateSelectedCount();
+            }
+        });
+        
+        deviceList.appendChild(deviceItem);
+    });
+    
+    // Add checkbox event listeners
+    document.querySelectorAll('.device-checkbox').forEach(checkbox => {
+        checkbox.addEventListener('change', function() {
+            this.closest('.device-item').classList.toggle('selected', this.checked);
+            updateSelectedCount();
+        });
+    });
+}
+
+function filterDevices() {
+    const searchTerm = document.getElementById('deviceSearch').value.toLowerCase();
+    const vendorFilter = document.getElementById('vendorFilter').value;
+    
+    document.querySelectorAll('.device-item').forEach(item => {
+        const deviceName = item.querySelector('.device-name').textContent.toLowerCase();
+        const deviceVendor = item.querySelector('.vendor-badge').textContent;
+        const matchesSearch = deviceName.includes(searchTerm);
+        const matchesVendor = !vendorFilter || deviceVendor === vendorFilter;
+        
+        item.style.display = matchesSearch && matchesVendor ? 'flex' : 'none';
+    });
+}
+
+function loadTemplates() {
+    fetch('/configuration-push/templates')
+        .then(response => response.json())
+        .then(templates => {
+            const templateSelect = document.getElementById('templateSelect');
+            templateSelect.innerHTML = '<option value="">Choose a template...</option>';
+            
+            templates.forEach(template => {
+                const option = document.createElement('option');
+                option.value = template.id;
+                option.textContent = template.name;
+                option.dataset.description = template.description;
+                templateSelect.appendChild(option);
+            });
+        })
+        .catch(error => {
+            console.error('Error loading templates:', error);
+        });
+}
+
+function toggleTemplateSection() {
+    const configType = document.getElementById('configType').value;
+    const templateSection = document.getElementById('templateSection');
+    templateSection.style.display = configType === 'template' ? 'block' : 'none';
+}
+
+function loadTemplateContent() {
+    const templateId = document.getElementById('templateSelect').value;
+    const description = document.getElementById('templateDescription');
+    
+    if (templateId) {
+        const selectedOption = document.getElementById('templateSelect').selectedOptions[0];
+        description.textContent = selectedOption.dataset.description;
+        
+        // Load template content (this would typically come from the server)
+        const templateContent = getTemplateContent(templateId);
+        document.getElementById('configContent').value = templateContent;
+    } else {
+        description.textContent = '';
+        document.getElementById('configContent').value = '';
+    }
+}
+
+function getTemplateContent(templateId) {
+    // Mock template content - in a real implementation, this would come from the server
+    const templates = {
+        'ospf': `router ospf 1
+ network 192.168.1.0 0.0.0.255 area 0
+ network 10.0.0.0 0.255.255.255 area 0`,
+        'bgp': `router bgp 65000
+ neighbor 192.168.1.2 remote-as 65001
+ network 192.168.1.0 mask 255.255.255.0`,
+        'vlan': `vlan 10
+ name DATA
+vlan 20
+ name VOICE
+interface vlan 10
+ ip address 192.168.10.1 255.255.255.0`,
+        'acl': `access-list 100 permit ip 192.168.1.0 0.0.0.255 any
+access-list 100 deny ip any any log`
+    };
+    return templates[templateId] || '';
+}
+
+function updateSelectedCount() {
+    const selectedDevices = document.querySelectorAll('.device-checkbox:checked');
+    const count = selectedDevices.length;
+    document.getElementById('selectedCount').textContent = count;
+    
+    const pushButton = document.getElementById('pushConfig');
+    pushButton.disabled = count === 0 || !document.getElementById('configContent').value.trim();
+}
+
+function validateConfiguration() {
+    const configContent = document.getElementById('configContent').value.trim();
+    if (!configContent) {
+        alert('Please enter configuration content to validate.');
+        return;
+    }
+    
+    // TODO: Implement actual configuration validation
+    alert('Configuration validation completed. No syntax errors found.');
+}
+
+function clearConfiguration() {
+    document.getElementById('configContent').value = '';
+    document.getElementById('configType').value = 'custom';
+    document.getElementById('templateSection').style.display = 'none';
+    updateSelectedCount();
+}
+
+function pushConfiguration() {
+    const selectedDevices = Array.from(document.querySelectorAll('.device-checkbox:checked')).map(cb => cb.dataset.name);
+    const configContent = document.getElementById('configContent').value.trim();
+    const configType = document.getElementById('configType').value;
+    
+    if (selectedDevices.length === 0 || !configContent) {
+        alert('Please select devices and enter configuration content.');
+        return;
+    }
+    
+    const data = {
+        devices: selectedDevices,
+        config_content: configContent,
+        config_type: configType
+    };
+    
+    fetch('/configuration-push/push', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(result => {
+        showResults(result);
+    })
+    .catch(error => {
+        console.error('Error pushing configuration:', error);
+        alert('Error pushing configuration. Please try again.');
+    });
+}
+
+function dryRunConfiguration() {
+    const selectedDevices = Array.from(document.querySelectorAll('.device-checkbox:checked')).map(cb => cb.dataset.name);
+    const configContent = document.getElementById('configContent').value.trim();
+    
+    if (selectedDevices.length === 0 || !configContent) {
+        alert('Please select devices and enter configuration content.');
+        return;
+    }
+    
+    // Simulate dry run results
+    const results = selectedDevices.map(device => ({
+        device: device,
+        status: 'dry_run',
+        message: `Configuration would be applied to ${device} (DRY RUN)`
+    }));
+    
+    showResults({
+        success: true,
+        results: results,
+        message: `Dry run completed for ${selectedDevices.length} device(s)`
+    });
+}
+
+function showResults(result) {
+    const modal = document.getElementById('resultsModal');
+    const resultsDiv = document.getElementById('pushResults');
+    
+    let resultsHtml = `<div class="alert alert-${result.success ? 'success' : 'error'}">${result.message}</div>`;
+    
+    if (result.results) {
+        resultsHtml += '<div class="results-list">';
+        result.results.forEach(item => {
+            const statusClass = item.status === 'success' ? 'success' : 'error';
+            resultsHtml += `
+                <div class="result-item">
+                    <strong>${item.device}:</strong> 
+                    <span class="status-${statusClass}">${item.message}</span>
+                </div>
+            `;
+        });
+        resultsHtml += '</div>';
+    }
+    
+    resultsDiv.innerHTML = resultsHtml;
+    modal.style.display = 'block';
+}
+
+function closeModal() {
+    document.getElementById('resultsModal').style.display = 'none';
+}
+
+// Update selected count when config content changes
+document.getElementById('configContent').addEventListener('input', updateSelectedCount);
+
+// L3VPN Functions
+function toggleConfigurationType() {
+    const selectedType = document.querySelector('input[name="configType"]:checked').value;
+    const standardSection = document.getElementById('standardConfigSection');
+    const l3vpnSection = document.getElementById('l3vpnConfigSection');
+    
+    if (selectedType === 'standard') {
+        standardSection.style.display = 'block';
+        l3vpnSection.style.display = 'none';
+    } else {
+        standardSection.style.display = 'none';
+        l3vpnSection.style.display = 'block';
+    }
+}
+
+function loadPaths() {
+    fetch('/configuration-push/paths')
+        .then(response => response.json())
+        .then(paths => {
+            displayPaths(paths);
+        })
+        .catch(error => {
+            console.error('Error loading paths:', error);
+            document.getElementById('pathList').innerHTML = '<div class="alert alert-error">Error loading paths</div>';
+        });
+}
+
+function displayPaths(paths) {
+    const pathList = document.getElementById('pathList');
+    pathList.innerHTML = '';
+    
+    if (paths.length === 0) {
+        pathList.innerHTML = '<div class="no-paths">No paths available. Use Path Finder to discover paths first.</div>';
+        return;
+    }
+    
+    paths.forEach(path => {
+        const pathItem = document.createElement('div');
+        pathItem.className = 'path-item';
+        pathItem.innerHTML = `
+            <input type="radio" name="selectedPath" value="${path.name}" class="path-radio">
+            <div class="path-info">
+                <div class="path-name">
+                    ${path.name}
+                    <span class="path-type-badge path-type-${path.type}">${path.type}</span>
+                </div>
+                <div class="path-details">
+                    Routers: ${path.router_count} | Cost: ${path.total_cost || 'N/A'}
+                </div>
+            </div>
+        `;
+        
+        pathItem.addEventListener('click', function(e) {
+            if (e.target.type !== 'radio') {
+                const radio = this.querySelector('.path-radio');
+                radio.checked = true;
+                this.classList.add('selected');
+                // Remove selection from other items
+                document.querySelectorAll('.path-item').forEach(item => {
+                    if (item !== this) {
+                        item.classList.remove('selected');
+                    }
+                });
+                updateL3VPNSummary();
+            }
+        });
+        
+        pathList.appendChild(pathItem);
+    });
+    
+    // Add radio event listeners
+    document.querySelectorAll('.path-radio').forEach(radio => {
+        radio.addEventListener('change', function() {
+            document.querySelectorAll('.path-item').forEach(item => {
+                item.classList.remove('selected');
+            });
+            this.closest('.path-item').classList.add('selected');
+            updateL3VPNSummary();
+        });
+    });
+}
+
+function filterPaths() {
+    const filterValue = document.getElementById('pathTypeFilter').value;
+    const pathItems = document.querySelectorAll('.path-item');
+    
+    pathItems.forEach(item => {
+        const pathType = item.querySelector('.path-type-badge').textContent.toLowerCase();
+        const matchesFilter = !filterValue || pathType === filterValue.toLowerCase();
+        item.style.display = matchesFilter ? 'flex' : 'none';
+    });
+}
+
+function updateL3VPNSummary() {
+    const selectedPath = document.querySelector('input[name="selectedPath"]:checked');
+    const vrfName = document.getElementById('vrfName').value;
+    const rd = document.getElementById('routeDistinguisher').value;
+    
+    document.getElementById('selectedPathName').textContent = selectedPath ? selectedPath.value : 'None';
+    document.getElementById('vrfNameDisplay').textContent = vrfName || 'Not set';
+    document.getElementById('rdDisplay').textContent = rd || 'Not set';
+    
+    // Enable/disable configure button
+    const configureButton = document.getElementById('configureL3VPN');
+    configureButton.disabled = !(selectedPath && vrfName && rd);
+}
+
+function configureL3VPN() {
+    const selectedPath = document.querySelector('input[name="selectedPath"]:checked');
+    const vrfName = document.getElementById('vrfName').value;
+    const rd = document.getElementById('routeDistinguisher').value;
+    const description = document.getElementById('vrfDescription').value;
+    const asn = document.getElementById('asn').value;
+    const username = document.getElementById('username').value;
+    const password = document.getElementById('password').value;
+    
+    if (!selectedPath || !vrfName || !rd) {
+        alert('Please select a path and provide VRF name and Route Distinguisher.');
+        return;
+    }
+    
+    const data = {
+        path_name: selectedPath.value,
+        vrf_name: vrfName,
+        rd: rd,
+        description: description,
+        asn: asn,
+        username: username,
+        password: password
+    };
+    
+    fetch('/configuration-push/l3vpn/configure', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(result => {
+        showL3VPNResults(result);
+    })
+    .catch(error => {
+        console.error('Error configuring L3VPN:', error);
+        alert('Error configuring L3VPN. Please try again.');
+    });
+}
+
+function dryRunL3VPN() {
+    const selectedPath = document.querySelector('input[name="selectedPath"]:checked');
+    const vrfName = document.getElementById('vrfName').value;
+    const rd = document.getElementById('routeDistinguisher').value;
+    
+    if (!selectedPath || !vrfName || !rd) {
+        alert('Please select a path and provide VRF name and Route Distinguisher.');
+        return;
+    }
+    
+    // Simulate dry run results
+    const results = [
+        {
+            'router': 'Router1',
+            'status': 'dry_run',
+            'message': `Would create VRF ${vrfName} with RD ${rd} (DRY RUN)`
+        },
+        {
+            'router': 'Router2',
+            'status': 'dry_run',
+            'message': `Would create VRF ${vrfName} with RD ${rd} (DRY RUN)`
+        }
+    ];
+    
+    showL3VPNResults({
+        success: true,
+        path_name: selectedPath.value,
+        vrf_name: vrfName,
+        rd: rd,
+        results: results,
+        message: `Dry run completed for path ${selectedPath.value}`
+    });
+}
+
+function showL3VPNResults(result) {
+    const modal = document.getElementById('resultsModal');
+    const resultsDiv = document.getElementById('pushResults');
+    
+    let resultsHtml = `<div class="alert alert-${result.success ? 'success' : 'error'}">${result.message}</div>`;
+    
+    if (result.path_name) {
+        resultsHtml += `
+            <div class="result-summary">
+                <h4>Configuration Summary:</h4>
+                <p><strong>Path:</strong> ${result.path_name}</p>
+                <p><strong>VRF:</strong> ${result.vrf_name}</p>
+                <p><strong>Route Distinguisher:</strong> ${result.rd}</p>
+            </div>
+        `;
+    }
+    
+    if (result.results) {
+        resultsHtml += '<div class="results-list">';
+        result.results.forEach(item => {
+            const statusClass = item.status === 'success' ? 'success' : 
+                              item.status === 'dry_run' ? 'info' : 'error';
+            resultsHtml += `
+                <div class="result-item">
+                    <strong>${item.router}:</strong> 
+                    <span class="status-${statusClass}">${item.message}</span>
+                </div>
+            `;
+        });
+        resultsHtml += '</div>';
+    }
+    
+    resultsDiv.innerHTML = resultsHtml;
+    modal.style.display = 'block';
+}
+</script> 

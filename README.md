@@ -20,59 +20,178 @@ This project presents a novel, web-based network automation and visualization pl
 ---
 
 ## Project Structure
-
-```
-webapp/
+gns3-webapp/
 │
-├── app.py                  # Main Flask app entry point
-├── requirements.txt        # Python dependencies
+├── app.py                      # Main backend entry point (Flask/Django/FastAPI)
 │
-├── blueprints/             # Flask blueprints (UI routes, API endpoints)
-│   ├── main.py
-│   ├── inventory.py
-│   ├── configuration_push.py
+├── templates/                  # All HTML (Jinja2) templates for frontend
+│   ├── index.html
+│   ├── alive_ips.html
+│   ├── base.html
+│   ├── configuration_push.html
+│   ├── inventory.html
+│   ├── routers.html
+│   ├── rib/
+│   │   ├── rib.html
+│   │   └── rib_history.html
+|   |── routefind/
+|   |   ├── find_rotuer.html
+│   │   └── index.html
+|   |   ├── route_pair_result.html
+│   │   └── route_result.html
 │   ├── topology/
-│   │   ├── topology.py
-│   │   ├── protocol_utils.py
-│   └── ...
+│   │   ├── topology_view.html
+|   |   ├── protocol_topology_view.html
+│   │   └── topology_visualization.html
+│   ├── pathfinder/
+│   │   └── pathfinder.html
+│   ├── configuration_push.html
+|   |   └── index.html
+│   └── l3vpn/
+│   |   └── vpn_services.html
+|   └── services_physical/
+│   |   └── services_physical.html
 │
-├── services/               # Backend services (DB, NETCONF, protocol helpers)
-│   ├── db.py
-│   ├── netconf_service.py
-│   ├── ports_protocols.py
-│   ├── vendor_host.py
-│   └── ...
+├── static/css/                     # Static files (CSS, JS, images)
+│   └──  #style.css
+│  
 │
-├── l3vpn/                  # L3VPN/VRF push logic
-│   ├── vrf.py
-│   ├── vrf_db_manager.py
+├── blueprints/                 # Flask blueprints (modular routes/views)
+│   ├── inventory.py
+│   ├── rib.py
+│   ├── topology/
+│   │   ├── __init__.py
+│   │   └── topology.py
+│   │   └── protocol_utils.py
 │   ├── main.py
-│   └── ...
+│   ├── pathfinder.py
+│   ├── scan.py
+│   ├── services_physical.py
+│   ├── view.py
+│   └── configuration_push.py
 │
-├── rib/                    # RIB parsing and vendor-specific logic
+├── services/                   # Backend service modules (network logic, DB, NETCONF, SSH)
+│   ├── __init__.py
+│   ├── db.py                   # Router DB logic (add, clear, get routers, etc.)
+│   ├── vendor_host.py          # NETCONF/SNMP device info fetch
+│   ├── netconf_service.py      # NETCONF interface/protocol scan
+│   ├── ports_protocols.py      # Interface/protocol parsing
+│   ├── rib.py                  # RIB DB logic
+│   ├── gns3_service.py                
+│   ├── rib.py                
+│   ├── iipinger.py                
+│   ├── live_ip_detector.py                
+│   ├── subnet_parser.py                 
+│   ├── vendor_detect.py                 
+│   ├── scan_service.py         # Ping sweep, live IP detection
+│   └── inventory_service.py    # IP/CIDR validation
+│
+├── services_physical/                 # Flask blueprints (modular routes/views)
+│   ├── arista_phy.py
+│   ├── arista_serv.py
+│   ├── cisco_phy.py
+│   ├── cisco_serv.py
+│   ├── juniper_phy.py
+│   ├── juniper_serv.py
+│   ├── forms.py
+│   ├── models.py
+│   ├── utils.py
+│   ├── views.py
+│   ├── juniper_serv_test.py
+│   ├── juniper_phy_test.py
+│   └── main.py
+│
+├── configuration_push/                        # RIB parsing and vendor-specific logic
+│   ├── __init__.py
+│   ├── bgp_check.py
+│   ├── interface_manager.py
+│   ├── loopback_fetcher.py
+│   ├── README.md
+│   └── template_manager.py
+│
+├── pathfinder/               
+│   ├── __init__.py
+│   ├── allpaths.db
+│   ├── primary_path.db
+│   ├── altpaths.db
+│   ├── data.py
+│   ├── find.py
+│   ├── path.db
+│   ├── path.py
+│   └── valid.py
+│
+│
+├── rib/                        # RIB parsing and vendor-specific logic
+│   ├── db_parser.py
+│   ├── db_utils.py
+│   ├── cisco.py
 │   ├── arista.py
+│   ├── juniper.py
+│   ├── nokia.py
 │   ├── cisco_parse.py
-│   └── ...
+│   ├── arista_parse.py
+│   ├── juniper_parse.py
+│   ├── nokia_parse.py
+│   ├── huawei.py
+│   └── huawei_parse.py
 │
-├── routefind/              # Pathfinding, IP validation, visualization
-│   ├── ip_validator.py
-│   ├── network_visualizer.py
-│   └── ...
+├── l3vpn/                      # L3VPN/VRF logic and workflow
+│   ├── vrf.py                  # VRF push logic (WebVRFManager, etc.)
+│   ├── main.py                
+│   ├── netconf.py                 
+│   ├── vrf_db_manager.py       # VRF DB logic (populate, update, fetch)
+│   └── test_vrf_push.py        # Standalone VRF push test script
 │
-├── templates/              # Jinja2 HTML templates (UI)
-│   └── ...
+├── routefind/                  # Pathfinding and router lookup logic
+│   ├── __init__.py
+│   ├── templates/
+│   │   ├── index.html
+│   │   └── lookup_result.html
+│   ├── router_finder.py
+│   ├── router_lookup.py
+│   ├── routes.py
+│   ├── path_finder.py
+│   ├── metwork_visualization.py
+│   └── ip_validator.py
 │
-├── static/                 # Static assets (CSS, JS)
-│   └── ...
+├── test_routefind/                  # Pathfinding and router lookup logic
+│   ├── test_ip_validator.py
+│   └── test_router_lookup.py
+├── topo/                       # Topology learning and INIP/directconn logic
+│   ├── __init__.py
+│   ├── topo_inip.py
+│   ├── test_connections.py
+│   ├── topo_connections.py
+│   └── test_inip.py
 │
-├── test_routefind/         # Unit and integration tests
-│   └── ...
+├── routers.db                  # SQLite DB for discovered routers
+├── rib_db.sqlite3              # SQLite DB for RIB entries
+├── inip.db                     # SQLite DB for interface IPs
+├── directconndb                # SQLite DB for direct connections
+├── vrf.db                      # SQLite DB for VRF config
+├── arista_routing_table_venv.txt                
+├── ospfdb                   
+├── proto_routes.db                    
+├── protodb                  
+├── push_data                 
+├── push_data.db                    
+├── requirements.txt                
+├── SELECT                     
+├── service_discovery_log       
+├── test_arista_enhanced.py          
+├── test_arista_venv.py           
+├── test_device_info.py                      
+├── test_juniper_full.py                     
+├── test_juniper_rpc.py                     
+├── test_juniper.py                     
+├── test_router_finder_mock.py                    
+├── test_router_finder.py                    
+├── view_rib.py                     
+├── vrf_db.sqlite3                         
 │
-├── <various .db files>     # SQLite databases (routers, RIB, VRF, etc.)
-└── README.md               # This file
-```
+├── requirements.txt            # Python dependencies
+└── README.md                   # Project documentation
 
----
 
 ## Setup & Installation
 
@@ -247,22 +366,36 @@ sudo ip link set dev tap0 up
 
 ---
 
-## Contribution & Citation
+## 7. Contributors
 
-- **Contributions**:  
-  Please submit pull requests with clear docstrings and tests.
-- **Citation**:  
-  If using this project in academic work, please cite as:  
-  ```
-  <Your Name>, "English-Driven Web-Based Network Automation and Visualization," IEEE, 2024.
-  ```
+This project was developed as part of the Smart World & Communication division at L&T.
+
+- **Premkumar B**  
+  *Project Manager, Mentor*  
+  Smart World & Communication, L&T
+
+- **Jayashree Balaji**  
+  *Mentor*  
+  Smart World & Communication, L&T
+
+- **Meera R**  
+  *Intern – Full-Stack Developer, Core Coder*  
+  Smart World & Communication, L&T
+
+- **Lakshmi Narayanan**  
+  *Intern – Networking Expert, Tester, Coder*  
+  Smart World & Communication, L&T
+
+- **Abhishek Kumar S**  
+  *Intern – Full-Stack Developer, Coder*  
+  Smart World & Communication, L&T
 
 ---
 
 ## Contact
 
 For questions, issues, or collaboration, please contact:  
-<your-email@example.com>
+meerarajaram01@gmail.com
 
 ---
 

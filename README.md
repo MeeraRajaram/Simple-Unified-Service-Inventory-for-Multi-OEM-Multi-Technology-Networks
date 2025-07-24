@@ -23,7 +23,6 @@ This project presents a novel, web-based network automation and visualization pl
 gns3-webapp/
 │
 ├── app.py                      # Main backend entry point (Flask/Django/FastAPI)
-├── LICENSE  
 │
 ├── templates/                  # All HTML (Jinja2) templates for frontend
 │   ├── index.html
@@ -51,7 +50,7 @@ gns3-webapp/
 │   └── l3vpn/
 │   |   └── vpn_services.html
 |   └── services_physical/
-│       └── services_physical.html
+│   |   └── services_physical.html
 │
 ├── static/css/                     # Static files (CSS, JS, images)
 │   └──  #style.css

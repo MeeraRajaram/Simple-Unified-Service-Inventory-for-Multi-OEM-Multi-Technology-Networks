@@ -398,6 +398,10 @@ For questions, issues, or collaboration, please contact:
 meerarajaram01@gmail.com
 
 ---
+## 📄 License
+
+This project is licensed under the [MIT License](./LICENSE).
+
 
 **For more details, see comments and docstrings in each module.**
 

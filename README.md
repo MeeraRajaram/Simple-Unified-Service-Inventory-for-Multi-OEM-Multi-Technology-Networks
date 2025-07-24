@@ -398,7 +398,7 @@ For questions, issues, or collaboration, please contact:
 meerarajaram01@gmail.com
 
 ---
-## 📄 License
+## License
 
 This project is licensed under the [MIT License](./LICENSE).
 

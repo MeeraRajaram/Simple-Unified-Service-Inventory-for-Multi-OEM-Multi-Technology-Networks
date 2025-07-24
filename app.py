@@ -1,3 +1,10 @@
+"""
+app.py
+------
+Main Flask application entry point for the network automation web app.
+Initializes Flask app, registers blueprints, and provides API endpoints for VRF creation and interface assignment.
+"""
+
 from flask import Flask
 from blueprints.main import main_bp
 from blueprints.inventory import inventory_bp
@@ -32,6 +39,17 @@ app.register_blueprint(pathfinder_bp)
 app.register_blueprint(configuration_push_bp)
 
 def find_free_port(start_port=5001, max_port=5100):
+    """
+    Find a free TCP port in the given range.
+
+    Args:
+        start_port (int): Starting port number.
+        max_port (int): Maximum port number (exclusive).
+    Returns:
+        int: First available port number.
+    Raises:
+        RuntimeError: If no free port is found in the range.
+    """
     for port in range(start_port, max_port):
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             try:
@@ -43,6 +61,12 @@ def find_free_port(start_port=5001, max_port=5100):
 
 @app.route('/api/create-vrf', methods=['POST'])
 def create_vrf():
+    """
+    API endpoint to create a VRF and assign interfaces on routers via NETCONF.
+    Expects JSON with routers, username, password, and VRF details.
+    Returns:
+        JSON: Results for each router.
+    """
     data = request.get_json()
     routers = data['routers']
     username = data['username']
@@ -148,6 +172,9 @@ def create_vrf():
     return jsonify({"results": results, "success": all(r['success'] for r in results)})
 
 if __name__ == '__main__':
+    """
+    Main entry point for running the Flask app.
+    """
     port = 5006
     print(f"Starting Flask app on port {port}")
     app.run(debug=True, port=port) 

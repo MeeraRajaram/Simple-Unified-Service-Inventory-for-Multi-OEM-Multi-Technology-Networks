@@ -1,8 +1,31 @@
+"""
+rib/arista.py
+-------------
+Arista RIB (Routing Information Base) retrieval and parsing module for network automation web app.
+Handles NETCONF connection to Arista EOS devices, retrieves interface and routing data, and parses it for UI/database use.
+"""
+
 from ncclient import manager
 from lxml import etree
 from rib import arista_parse
 
 def handle_routing_info(hostname, ip, username, password):
+    """
+    Retrieve and parse routing information from an Arista router using NETCONF.
+
+    Args:
+        hostname (str): Hostname of the router.
+        ip (str): Management or loopback IP address of the router.
+        username (str): NETCONF username.
+        password (str): NETCONF password.
+    Returns:
+        dict: Result dictionary with keys:
+            - success (bool): True if retrieval and parsing succeeded, False otherwise.
+            - hostname (str): Hostname of the router.
+            - rib_xml (str): Raw XML string of the router's RIB and interface data (if successful).
+            - routes (list): Parsed route entries (if successful).
+            - error (str): Error message (if failed).
+    """
     print(f"[Arista] Handling routing info for {hostname} ({ip}) with user {username}")
     router = {
         'host': ip,

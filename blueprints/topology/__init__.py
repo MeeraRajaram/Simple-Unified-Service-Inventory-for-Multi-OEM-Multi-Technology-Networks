@@ -1,5 +1,6 @@
-# This file marks the topology directory as a Python package. 
- 
-import sys
-import os
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))) 
+"""
+blueprints/topology/__init__.py
+------------------------------
+Initializes the topology subpackage for Flask blueprints.
+This package contains modules for protocol utilities and topology visualization.
+""" 

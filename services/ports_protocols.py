@@ -1,7 +1,23 @@
+"""
+services/ports_protocols.py
+--------------------------
+Module for discovering router interfaces and enabled protocols via NETCONF.
+Supports multi-vendor interface parsing and protocol detection for network automation web apps.
+"""
+
 from ncclient import manager
 import xml.etree.ElementTree as ET
 
 def extract_interface_details(xml_data, ns_tag):
+    """
+    Parse XML data to extract interface names and status for a given namespace tag.
+
+    Args:
+        xml_data (str): NETCONF XML response as string.
+        ns_tag (str): Namespace tag for XML parsing (e.g., '{urn:ietf:params:xml:ns:yang:ietf-interfaces}').
+    Returns:
+        list: List of interface names with status (e.g., ['GigabitEthernet1 (Up)'])
+    """
     ports = []
     try:
         root = ET.fromstring(xml_data)
@@ -16,6 +32,14 @@ def extract_interface_details(xml_data, ns_tag):
     return ports if ports else ["Unknown"]
 
 def extract_enabled_protocols(capabilities):
+    """
+    Parse NETCONF server capabilities to detect enabled protocols.
+
+    Args:
+        capabilities (iterable): NETCONF server capabilities.
+    Returns:
+        list: List of detected protocol names (e.g., ['NETCONF', 'BGP'])
+    """
     protocols = set()
     for cap in capabilities:
         lcap = cap.lower()
@@ -36,6 +60,18 @@ def extract_enabled_protocols(capabilities):
     return list(protocols) if protocols else ["Unknown"]
 
 def get_ports_and_protocols(host, port, username, password):
+    """
+    Connect to a router via NETCONF and fetch interface and protocol information.
+    Tries standard IETF, Cisco, and Juniper YANG models for interface discovery.
+
+    Args:
+        host (str): Router IP address.
+        port (int): NETCONF port (default: 830).
+        username (str): NETCONF username.
+        password (str): NETCONF password.
+    Returns:
+        tuple: (list of interfaces, list of protocols)
+    """
     try:
         with manager.connect(
             host=host,

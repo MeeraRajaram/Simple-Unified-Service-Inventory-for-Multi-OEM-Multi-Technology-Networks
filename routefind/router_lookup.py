@@ -1,3 +1,10 @@
+"""
+routefind/router_lookup.py
+-------------------------
+Router lookup and matching utilities for network automation web app.
+Provides functions to find the router/interface for a given IP using RIB and inventory data, with vendor detection.
+"""
+
 import sqlite3
 import ipaddress
 from rib.db_utils import rib_db_manage
@@ -5,6 +12,15 @@ from services.db import router_db
 from services.vendor_detect import detect_vendor_via_netconf
 
 def is_valid_host_in_subnet(ip, subnet):
+    """
+    Check if an IP address is a valid host (not network/broadcast) within a given subnet.
+
+    Args:
+        ip (str): IP address to check.
+        subnet (str): Subnet in CIDR notation.
+    Returns:
+        bool: True if IP is a valid host in the subnet, False otherwise.
+    """
     try:
         net = ipaddress.ip_network(subnet, strict=False)
         ip_obj = ipaddress.ip_address(ip)
@@ -13,6 +29,14 @@ def is_valid_host_in_subnet(ip, subnet):
         return False
 
 def find_router_for_ip(ip):
+    """
+    Find the router and interface for a given IP address using RIB and inventory data.
+
+    Args:
+        ip (str): IP address to search for.
+    Returns:
+        dict or None: Router info dict with keys 'router', 'vendor', 'router_ip', 'interface', or None if not found.
+    """
     entries = rib_db_manage.get_entries()
     routers = router_db.get_routers()
     search_prefixes = [f"{ip}/32", f"{ip}/30", f"{ip}/24"]

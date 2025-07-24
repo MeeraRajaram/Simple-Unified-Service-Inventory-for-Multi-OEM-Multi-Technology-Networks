@@ -1,3 +1,10 @@
+"""
+view_rib.py
+-----------
+Standalone script to test Arista RIB XML retrieval and parsing using handle_routing_info.
+Prints the raw XML and parsed route table for a given Arista device.
+"""
+
 from rib.arista import handle_routing_info
 
 # Run the test case to populate the RIB table and get XML and parsed routes for Arista

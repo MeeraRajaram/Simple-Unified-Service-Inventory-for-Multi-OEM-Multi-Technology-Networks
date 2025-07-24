@@ -1,3 +1,11 @@
+"""
+services/vendor_host.py
+----------------------
+Vendor-agnostic device information fetcher for network automation web app.
+Provides functions to detect vendor, fetch hostname, software version, and status using NETCONF.
+Supports Cisco, Juniper, Arista, and can be extended for other vendors.
+"""
+
 import socket
 from ncclient import manager
 from ncclient.xml_ import to_ele
@@ -5,6 +13,15 @@ from xml.dom.minidom import parseString
 import xml.etree.ElementTree as ET
 
 def is_port_open(host, port, timeout=2):
+    """
+    Check if a TCP port is open on a given host.
+    Args:
+        host (str): IP address or hostname.
+        port (int): TCP port number.
+        timeout (int): Timeout in seconds.
+    Returns:
+        bool: True if port is open, False otherwise.
+    """
     try:
         with socket.create_connection((host, port), timeout=timeout):
             return True
@@ -12,7 +29,13 @@ def is_port_open(host, port, timeout=2):
         return False
 
 def extract_vendor_name(text):
-    """Robust extraction of vendor name from namespace or capability strings."""
+    """
+    Extract vendor name from a capability string or namespace.
+    Args:
+        text (str): Capability or namespace string.
+    Returns:
+        str or None: Vendor name if detected, else None.
+    """
     if not text:
         return None
     text = text.lower()
@@ -29,9 +52,19 @@ def extract_vendor_name(text):
     return None
 
 def get_device_info(host, port, username, password):
+    """
+    Connect to a device via NETCONF and fetch hostname, software version, vendor, and status.
+    Supports Cisco, Juniper, Arista. Extend for more vendors as needed.
+    Args:
+        host (str): Device IP address.
+        port (int): NETCONF port.
+        username (str): NETCONF username.
+        password (str): NETCONF password.
+    Returns:
+        tuple: (hostname, software_version, vendor, status)
+    """
     if not is_port_open(host, port):
         return "Unknown", "Unknown", "Unknown", "Not Enabled (No NETCONF)"
-    
     try:
         with manager.connect(
             host=host,

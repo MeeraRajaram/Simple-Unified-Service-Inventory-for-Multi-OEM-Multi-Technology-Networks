@@ -1,9 +1,8 @@
 """
-Module: ip_validator.py
-Purpose: Provides functions for validating IP addresses and subnet ranges.
-Functions:
-- is_valid_ip: Validates if a string is a valid IP address
-- validate_ip_with_subnet: Validates if an IP belongs to a subnet range
+routefind/ip_validator.py
+------------------------
+IP address validation utilities for network automation web app.
+Provides functions to validate IP addresses and check if an IP belongs to a given subnet, excluding network/broadcast addresses.
 """
 
 import ipaddress
@@ -11,10 +10,11 @@ import ipaddress
 def is_valid_ip(ip):
     """
     Check if a given string is a valid IP address.
+
     Args:
-        ip (str): IP address to validate
+        ip (str): IP address to validate.
     Returns:
-        bool: True if valid IP, False otherwise
+        bool: True if valid IP, False otherwise.
     """
     try:
         ipaddress.ip_address(ip)
@@ -25,16 +25,16 @@ def is_valid_ip(ip):
 def validate_ip_with_subnet(ip, subnet):
     """
     Validate if an IP address belongs to a subnet range and is not network/broadcast address.
+
     Args:
-        ip (str): IP address to validate
-        subnet (str): Subnet in CIDR notation (e.g., "192.168.1.0/24")
+        ip (str): IP address to validate.
+        subnet (str): Subnet in CIDR notation (e.g., "192.168.1.0/24").
     Returns:
-        tuple: (bool, str) - (is_valid, message)
+        tuple: (bool, str) - (is_valid, message).
     """
     try:
         network = ipaddress.ip_network(subnet, strict=False)
         ip_obj = ipaddress.ip_address(ip)
-        
         if ip_obj in network:
             if ip_obj != network.network_address and ip_obj != network.broadcast_address:
                 return True, "Valid IP for the given subnet"

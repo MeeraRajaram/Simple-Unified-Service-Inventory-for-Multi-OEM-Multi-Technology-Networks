@@ -1,5 +1,8 @@
 """
-Standalone test for router finder logic using mock RIB data.
+test_router_finder_mock.py
+-------------------------
+Standalone test for router finder logic using mock RIB and inventory data.
+Tests the ability to detect routers and interfaces for a given IP using mock data for Cisco, Arista, and Juniper devices.
 """
 
 # --- Mock RIB Data (as seen in your UI) ---
@@ -109,6 +112,10 @@ MOCK_INVENTORY = [
 ]
 
 def run_tests():
+    """
+    Run the main test for improved_find_router_for_ip using mock RIB and inventory data.
+    Prints PASS/FAIL for the Arista test case.
+    """
     # Only test the Arista case as requested
     input_ip = "10.0.12.2"
     expected_router = "192.168.1.2"

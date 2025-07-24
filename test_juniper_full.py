@@ -1,12 +1,18 @@
-#!/usr/bin/env python3
 """
-Test script for full Juniper workflow: fetch XML, parse, and print table.
+test_juniper_full.py
+--------------------
+Standalone test script for full Juniper workflow: fetch XML, parse, and print table.
+Tests the ability to retrieve, parse, and display routing information from a Juniper router.
 """
+
 from rib.juniper import handle_routing_info
 from rib.juniper_parse import parse_juniper_rpc_xml
 from tabulate import tabulate
 
 def test_juniper_full():
+    """
+    Test the full Juniper workflow: fetch XML, parse, and print the routing table.
+    """
     router_name = "10.0.13.2"  # Use the actual hostname or IP from your router info table
     router_ip = "10.0.13.2"
     username = "admin"

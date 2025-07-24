@@ -1,6 +1,8 @@
 """
-Route Finding package initialization.
-This package contains modules for finding and visualizing network paths.
+routefind/__init__.py
+--------------------
+Route Finding package initialization for network automation web app.
+This package contains modules for validating IPs, finding routers, building network paths, and generating visualizations.
 """
 
 from .ip_validator import is_valid_ip, validate_ip_with_subnet

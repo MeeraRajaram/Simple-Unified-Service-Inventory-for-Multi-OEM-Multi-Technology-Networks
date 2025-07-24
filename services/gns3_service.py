@@ -1,6 +1,22 @@
+"""
+services/gns3_service.py
+-----------------------
+GNS3 server connection utilities for network automation web app.
+Provides functions to connect to a GNS3 server and check for project existence.
+"""
+
 import requests
 
 def connect_to_gns3(gns3_server, project_name):
+    """
+    Connect to a GNS3 server and check if a project exists.
+
+    Args:
+        gns3_server (str): Base URL of the GNS3 server (e.g., 'http://localhost:3080').
+        project_name (str): Name of the GNS3 project to check.
+    Returns:
+        tuple: (success (bool), message (str)).
+    """
     try:
         # Check GNS3 server connection
         response = requests.get(f"{gns3_server}/v2/version")

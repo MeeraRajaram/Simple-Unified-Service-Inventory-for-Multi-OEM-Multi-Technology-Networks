@@ -1,7 +1,24 @@
+"""
+rib/cisco_parse.py
+------------------
+Cisco RIB (Routing Information Base) XML parsing and database integration module for network automation web app.
+Provides functions to parse and store routing data from Cisco devices using IETF YANG models.
+"""
+
 from lxml import etree
 from rib.db_utils import rib_db_manage
 
 def parse_rib_xml(rib_xml, router_name, router_ip):
+    """
+    Parse RIB XML from a Cisco device and store parsed routes in the database.
+
+    Args:
+        rib_xml (str): XML string containing RIB data.
+        router_name (str): Hostname of the router.
+        router_ip (str): Management or loopback IP address of the router.
+    Returns:
+        list: List of parsed route entries (dicts) with protocol, destination, interface, and next hop.
+    """
     routes = []
     loopback_ip = ''
     try:

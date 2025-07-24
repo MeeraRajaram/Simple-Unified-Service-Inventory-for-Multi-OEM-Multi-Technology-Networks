@@ -1,6 +1,9 @@
 """
-Module: rib.py
-Purpose: Provides functions for accessing and managing RIB (Routing Information Base) data.
+services/rib.py
+--------------
+Routing Information Base (RIB) management module for network automation web app.
+Provides functions to access, add, and clear RIB entries in the rib_db.sqlite3 database.
+Designed for use in multi-vendor, live-updating network environments.
 """
 
 import sqlite3
@@ -9,22 +12,20 @@ from typing import List, Dict, Any
 def get_rib_entries(router_ip: str) -> List[Dict[str, Any]]:
     """
     Get RIB entries for a specific router.
+
     Args:
-        router_ip (str): Router's IP address
+        router_ip (str): Router's IP address.
     Returns:
-        list: List of RIB entries with their details
+        list: List of RIB entries with their details (destination, next_hop, interface, protocol, metric).
     """
     try:
         conn = sqlite3.connect('rib_db.sqlite3')
         cursor = conn.cursor()
-        
-        # Get RIB entries for the router
         cursor.execute("""
             SELECT destination, next_hop, interface, protocol, metric
             FROM rib_entries
             WHERE router_ip = ?
         """, (router_ip,))
-        
         entries = []
         for row in cursor.fetchall():
             entries.append({
@@ -34,10 +35,8 @@ def get_rib_entries(router_ip: str) -> List[Dict[str, Any]]:
                 'protocol': row[3],
                 'metric': row[4]
             })
-            
         conn.close()
         return entries
-        
     except sqlite3.Error as e:
         print(f"Database error: {e}")
         return []
@@ -48,16 +47,16 @@ def get_rib_entries(router_ip: str) -> List[Dict[str, Any]]:
 def add_rib_entry(router_ip: str, entry: Dict[str, Any]) -> bool:
     """
     Add a new RIB entry for a router.
+
     Args:
-        router_ip (str): Router's IP address
-        entry (dict): RIB entry details
+        router_ip (str): Router's IP address.
+        entry (dict): RIB entry details (destination, next_hop, interface, protocol, metric).
     Returns:
-        bool: True if successful, False otherwise
+        bool: True if successful, False otherwise.
     """
     try:
         conn = sqlite3.connect('rib_db.sqlite3')
         cursor = conn.cursor()
-        
         cursor.execute("""
             INSERT INTO rib_entries (
                 router_ip, destination, next_hop, interface, protocol, metric
@@ -70,11 +69,9 @@ def add_rib_entry(router_ip: str, entry: Dict[str, Any]) -> bool:
             entry.get('protocol'),
             entry.get('metric')
         ))
-        
         conn.commit()
         conn.close()
         return True
-        
     except sqlite3.Error as e:
         print(f"Database error: {e}")
         return False
@@ -85,21 +82,19 @@ def add_rib_entry(router_ip: str, entry: Dict[str, Any]) -> bool:
 def clear_rib_entries(router_ip: str) -> bool:
     """
     Clear all RIB entries for a specific router.
+
     Args:
-        router_ip (str): Router's IP address
+        router_ip (str): Router's IP address.
     Returns:
-        bool: True if successful, False otherwise
+        bool: True if successful, False otherwise.
     """
     try:
         conn = sqlite3.connect('rib_db.sqlite3')
         cursor = conn.cursor()
-        
         cursor.execute("DELETE FROM rib_entries WHERE router_ip = ?", (router_ip,))
-        
         conn.commit()
         conn.close()
         return True
-        
     except sqlite3.Error as e:
         print(f"Database error: {e}")
         return False

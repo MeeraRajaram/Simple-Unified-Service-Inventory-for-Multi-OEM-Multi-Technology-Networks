@@ -1,6 +1,8 @@
 """
-Services package initialization.
-This package contains various services for interacting with network devices and managing data.
+services/__init__.py
+-------------------
+Services package initialization for network automation web app.
+This package contains modules for interacting with network devices and managing persistent data.
 """
 
 from .rib import get_rib_entries, add_rib_entry, clear_rib_entries

@@ -1,3 +1,10 @@
+"""
+test_device_info.py
+------------------
+Standalone script to test device information retrieval using get_device_info.
+Prints hostname, software version, vendor, and status for each device in the list.
+"""
+
 from services.vendor_host import get_device_info
 
 # Replace with your actual device info

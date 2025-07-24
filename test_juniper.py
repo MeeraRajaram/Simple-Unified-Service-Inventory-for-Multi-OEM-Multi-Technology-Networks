@@ -1,13 +1,19 @@
-#!/usr/bin/env python3
 """
-Test script for Juniper RIB parsing functionality
+test_juniper.py
+---------------
+Standalone test script for Juniper RIB parsing functionality in the network automation web app.
+Tests the ability to retrieve and parse routing information from a Juniper router and save results to files.
 """
+
 from rib.juniper import handle_routing_info
 from rib.db_utils import rib_db_manage
 from tabulate import tabulate
 
 def test_juniper_parsing():
-    """Test the Juniper parsing functionality"""
+    """
+    Test the Juniper parsing functionality by retrieving and displaying RIB data.
+    Saves XML and table output to files for further inspection.
+    """
     router_name = "Juniper-Router"
     router_ip = "10.0.13.2"
     username = "admin"

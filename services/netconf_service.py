@@ -1,12 +1,28 @@
-import sys
-import os
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../day17/modules')))
+"""
+services/netconf_service.py
+--------------------------
+Network automation backend module for NETCONF-based interface and protocol discovery.
+Provides functions to fetch interface details and enabled protocols from routers using NETCONF.
+Designed for use in a modular Flask-based network automation web app.
+"""
+
 from services.vendor_host import get_device_info
 from ncclient import manager
 import xml.etree.ElementTree as ET
 from services.ports_protocols import get_ports_and_protocols
 
+# TODO: Replace print statements with logging for production/IEEE quality
+
 def extract_interface_details(xml_data, ns):
+    """
+    Parse XML data to extract interface names and status.
+
+    Args:
+        xml_data (str): NETCONF XML response as string.
+        ns (dict): Namespace mapping for XML parsing.
+    Returns:
+        list: List of interface names with status (e.g., ['GigabitEthernet1 (Up)'])
+    """
     ports = []
     try:
         root = ET.fromstring(xml_data)
@@ -21,6 +37,14 @@ def extract_interface_details(xml_data, ns):
     return ports if ports else ["Unknown"]
 
 def extract_enabled_protocols(capabilities):
+    """
+    Parse NETCONF server capabilities to detect enabled protocols.
+
+    Args:
+        capabilities (iterable): NETCONF server capabilities.
+    Returns:
+        list: List of detected protocol names (e.g., ['NETCONF', 'BGP'])
+    """
     protocols = set()
     for cap in capabilities:
         lcap = cap.lower()
@@ -41,6 +65,17 @@ def extract_enabled_protocols(capabilities):
     return list(protocols) if protocols else ["Unknown"]
 
 def get_ports_and_protocols(host, port, username, password):
+    """
+    Connect to a router via NETCONF and fetch interface and protocol information.
+
+    Args:
+        host (str): Router IP address.
+        port (int): NETCONF port (default: 830).
+        username (str): NETCONF username.
+        password (str): NETCONF password.
+    Returns:
+        tuple: (list of interfaces, list of protocols)
+    """
     try:
         with manager.connect(
             host=host,
@@ -79,6 +114,14 @@ def get_ports_and_protocols(host, port, username, password):
         return ["Unknown"], ["Unknown"]
 
 def check_netconf_for_ips(ip_cred_list):
+    """
+    For a list of IPs and credentials, check NETCONF connectivity and fetch device/interface/protocol info.
+
+    Args:
+        ip_cred_list (list): List of dicts with 'ip', 'username', 'password'.
+    Returns:
+        list: List of dicts with device and protocol/interface info.
+    """
     results = []
     for entry in ip_cred_list:
         ip = entry['ip']

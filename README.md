@@ -50,7 +50,7 @@ gns3-webapp/
 │   └── l3vpn/
 │   |   └── vpn_services.html
 |   └── services_physical/
-│   |   └── services_physical.html
+│       └── services_physical.html
 │
 ├── static/css/                     # Static files (CSS, JS, images)
 │   └──  #style.css

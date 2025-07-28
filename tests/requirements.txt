@@ -1,0 +1,7 @@
+flask
+requests
+ncclient
+lxml
+tabulate
+prettytable
+pytest 

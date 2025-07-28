@@ -24,8 +24,8 @@ class RouterDB:
         self.db_path = db_path
         self.conn = sqlite3.connect(self.db_path, check_same_thread=False)
         self.lock = Lock()
-        self._migrate_table()
         self._create_table()
+        self._migrate_table()
 
     def _create_table(self):
         """

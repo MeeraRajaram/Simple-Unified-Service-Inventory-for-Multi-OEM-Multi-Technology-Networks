@@ -53,7 +53,7 @@ gns3-webapp/
 │   |   └── services_physical.html
 │
 ├── static/css/                     # Static files (CSS, JS, images)
-│   └──  #style.css
+│   ├── #style.css
 │  
 │
 ├── blueprints/                 # Flask blueprints (modular routes/views)
@@ -78,10 +78,7 @@ gns3-webapp/
 │   ├── ports_protocols.py      # Interface/protocol parsing
 │   ├── rib.py                  # RIB DB logic
 │   ├── gns3_service.py                
-│   ├── rib.py                
-│   ├── iipinger.py                
-│   ├── live_ip_detector.py                
-│   ├── subnet_parser.py                 
+│   ├── rib.py                 
 │   ├── vendor_detect.py                 
 │   ├── scan_service.py         # Ping sweep, live IP detection
 │   └── inventory_service.py    # IP/CIDR validation
@@ -192,7 +189,6 @@ gns3-webapp/
 ├── requirements.txt            # Python dependencies
 └── README.md                   # Project documentation
 
-
 ## Setup & Installation
 
 1. **Clone the repository**  
@@ -227,96 +223,6 @@ gns3-webapp/
 ---
 
 ## Usage Guide
-
-### Webapp Platform Notes
-- **This webapp is Linux-based** and is designed to run on a Linux host.
-- **tap0 interface is required**: The host must have a `tap0` interface configured and connected to the GNS3 topology's Cloud node for management and ping reachability.
-- **Router loopbacks must be assigned** for proper discovery and pathfinding.
-
-### GNS3 Lab Setup & Usage
-
-#### 🖼️ Supported Topologies
-
-**Topology 1: Cisco–Arista–Juniper Triangle**
-- Cisco Catalyst 8000v
-- Juniper vSRX
-- Arista vEOS
-
-**Topology 2: Full-Mesh 4-Router Cisco Lab**
-- 4 Cisco Routers in full-mesh
-- OSPF-enabled for pathfinding
-
-#### 🧰 Prerequisites
-- GNS3 installed
-- Licensed appliances: CSR1000v, C8000v, Juniper vSRX, Arista vEOS
-- `tap0` configured in GNS3 to bridge host and topology
-- Host must be able to ping router IPs (e.g., 192.168.100.2)
-
-#### 🖧 Topology 1 Setup
-| Device      | Interface | IP            | Connected To |
-|-------------|-----------|---------------|--------------|
-| Cisco8000v  | Gi1       | 10.0.12.1/24  | Arista       |
-|             | Gi2       | 10.0.13.1/24  | Juniper      |
-|             | Gi3       | 192.168.100.2 | tap0         |
-| Arista      | Eth1      | 10.0.12.2/24  | Cisco        |
-|             | Eth2      | 10.0.14.1/24  | Juniper      |
-| Juniper     | ge-0/0/0  | 10.0.13.2/24  | Cisco        |
-|             | ge-0/0/1  | 10.0.14.2/24  | Arista       |
-
-**OSPF Sample Configs:**
-
-- **Cisco**
-  ```
-  conf t
-  router ospf 1
-   network 10.0.12.0 0.0.0.255 area 0
-   network 10.0.13.0 0.0.0.255 area 0
-  ```
-- **Arista**
-  ```
-  router ospf 1
-   network 10.0.12.0/24 area 0
-   network 10.0.14.0/24 area 0
-  ```
-- **Juniper**
-  ```
-  set protocols ospf area 0 interface ge-0/0/0.0
-  set protocols ospf area 0 interface ge-0/0/1.0
-  ```
-
-#### 🖧 Topology 2 Setup
-| Device   | Interface | IP            | Connected To |
-|----------|-----------|---------------|--------------|
-| Router1  | Gi1       | 10.0.12.1/24  | Router2      |
-|          | Gi2       | 10.0.13.1/24  | Router3      |
-|          | Gi3       | 192.168.100.2 | tap0         |
-| Router2  | Gi1       | 10.0.12.2/24  | Router1      |
-|          | Gi2       | 10.0.21.1/24  | Router4      |
-| Router3  | Gi1       | 10.0.13.2/24  | Router1      |
-|          | Gi2       | 10.0.23.1/24  | Router4      |
-| Router4  | Gi1       | 10.0.21.2/24  | Router2      |
-|          | Gi2       | 10.0.23.2/24  | Router3      |
-
-**OSPF (on all routers):**
-``` 
-conf t
-router ospf 1
- network 10.0.12.0 0.0.0.255 area 0
- network 10.0.13.0 0.0.0.255 area 0
- network 10.0.21.0 0.0.0.255 area 0
- network 10.0.23.0 0.0.0.255 area 0
-```
-
-#### 🌐 Configure tap0 on Host (Linux)
-```bash
-sudo ip tuntap add dev tap0 mode tap
-sudo ip addr add 192.168.100.1/24 dev tap0
-sudo ip link set dev tap0 up
-```
-- Connect tap0 to Cloud node in GNS3
-- Ping 192.168.100.2 to verify connectivity
-
----
 
 ### Web UI Workflows
 
@@ -366,42 +272,23 @@ sudo ip link set dev tap0 up
 
 ---
 
-## 7. Contributors
+## Contribution & Citation
 
-This project was developed as part of the Smart World & Communication division at L&T.
-
-- **Premkumar B**  
-  *Project Manager, Mentor*  
-  Smart World & Communication, L&T
-
-- **Jayashree Balaji**  
-  *Mentor*  
-  Smart World & Communication, L&T
-
-- **Meera R**  
-  *Intern – Full-Stack Developer, Core Coder*  
-  Smart World & Communication, L&T
-
-- **Lakshmi Narayanan**  
-  *Intern – Networking Expert, Tester, Coder*  
-  Smart World & Communication, L&T
-
-- **Abhishek Kumar S**  
-  *Intern – Full-Stack Developer, Coder*  
-  Smart World & Communication, L&T
+- **Contributions**:  
+  Please submit pull requests with clear docstrings and tests.
+- **Citation**:  
+  If using this project in academic work, please cite as:  
+  ```
+  <Your Name>, "English-Driven Web-Based Network Automation and Visualization," IEEE, 2024.
+  ```
 
 ---
 
 ## Contact
 
 For questions, issues, or collaboration, please contact:  
-meerarajaram01@gmail.com
+<your-email@example.com>
 
 ---
-## License
 
-This project is licensed under the [MIT License](./LICENSE).
-
-
-**For more details, see comments and docstrings in each module.**
-
+**For more details, see comments and docstrings in each module.** 

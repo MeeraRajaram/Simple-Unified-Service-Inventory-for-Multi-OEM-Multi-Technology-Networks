@@ -2,6 +2,6 @@ flask
 requests
 ncclient
 lxml
-tabulate
+tabulate 
 prettytable
 pytest 

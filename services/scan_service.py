@@ -8,12 +8,9 @@ Provides functions to parse subnets, ping hosts, and detect live IPs in a given 
 import sys
 import os
 #sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../day17/modules')))
-#from subnet_parser import SubnetParser
-#from iipinger import IPPinger
-#from live_ip_detector import LiveIPDetector
-from services.subnet_parser import SubnetParser
-from services.iipinger import IPPinger
-from services.live_ip_detector import LiveIPDetector
+from subnet_parser import SubnetParser
+from iipinger import IPPinger
+from live_ip_detector import LiveIPDetector
 
 def get_alive_ips(ip, cidr):
     """

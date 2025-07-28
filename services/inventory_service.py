@@ -1,6 +1,6 @@
 import sys
 import os
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../day17/modules')))
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__))))
 from ip_validator import IPValidator
  
 def validate_ip_and_cidr(ip, cidr):

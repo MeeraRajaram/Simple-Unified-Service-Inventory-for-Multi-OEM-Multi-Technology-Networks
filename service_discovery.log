@@ -430,3 +430,45 @@ b'\n#184\n<?xml version="1.0" encoding="UTF-8"?><nc:rpc xmlns:nc="urn:ietf:param
 2025-07-25 10:49:12,816 - INFO - 127.0.0.1 - - [25/Jul/2025 10:49:12] "GET /topology/protocol HTTP/1.1" 200 -
 2025-07-25 10:49:12,914 - INFO - 127.0.0.1 - - [25/Jul/2025 10:49:12] "GET /api/protocol-topology HTTP/1.1" 200 -
 2025-07-25 10:49:17,261 - INFO - 127.0.0.1 - - [25/Jul/2025 10:49:17] "GET /topology HTTP/1.1" 200 -
+2025-07-28 12:06:56,531 - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:5006
+2025-07-28 12:06:56,532 - INFO - [33mPress CTRL+C to quit[0m
+2025-07-28 12:06:56,533 - INFO -  * Restarting with stat
+2025-07-28 12:06:56,970 - WARNING -  * Debugger is active!
+2025-07-28 12:06:56,983 - INFO -  * Debugger PIN: 146-142-219
+2025-07-28 12:07:05,841 - INFO - 127.0.0.1 - - [28/Jul/2025 12:07:05] "GET / HTTP/1.1" 200 -
+2025-07-28 12:07:05,886 - INFO - 127.0.0.1 - - [28/Jul/2025 12:07:05] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
+2025-07-28 12:07:07,185 - INFO - 127.0.0.1 - - [28/Jul/2025 12:07:07] "[33mGET /favicon.ico HTTP/1.1[0m" 404 -
+2025-07-28 12:07:09,060 - INFO - 127.0.0.1 - - [28/Jul/2025 12:07:09] "GET /inventory HTTP/1.1" 200 -
+2025-07-28 12:07:09,091 - INFO - 127.0.0.1 - - [28/Jul/2025 12:07:09] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
+2025-07-28 12:07:10,203 - INFO - 127.0.0.1 - - [28/Jul/2025 12:07:10] "GET /rib HTTP/1.1" 200 -
+2025-07-28 12:07:10,233 - INFO - 127.0.0.1 - - [28/Jul/2025 12:07:10] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
+2025-07-28 12:07:11,448 - INFO - 127.0.0.1 - - [28/Jul/2025 12:07:11] "GET /inventory HTTP/1.1" 200 -
+2025-07-28 12:07:11,474 - INFO - 127.0.0.1 - - [28/Jul/2025 12:07:11] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
+2025-07-28 12:07:13,276 - INFO - 127.0.0.1 - - [28/Jul/2025 12:07:13] "GET /routers HTTP/1.1" 200 -
+2025-07-28 12:07:13,302 - INFO - 127.0.0.1 - - [28/Jul/2025 12:07:13] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
+2025-07-28 12:07:14,659 - INFO - 127.0.0.1 - - [28/Jul/2025 12:07:14] "GET / HTTP/1.1" 200 -
+2025-07-28 12:07:14,682 - INFO - 127.0.0.1 - - [28/Jul/2025 12:07:14] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
+2025-07-28 12:07:16,325 - INFO - 127.0.0.1 - - [28/Jul/2025 12:07:16] "GET /rib HTTP/1.1" 200 -
+2025-07-28 12:07:16,351 - INFO - 127.0.0.1 - - [28/Jul/2025 12:07:16] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
+2025-07-28 12:07:17,498 - INFO - 127.0.0.1 - - [28/Jul/2025 12:07:17] "GET /pathfinder HTTP/1.1" 200 -
+2025-07-28 12:07:27,653 - INFO - 127.0.0.1 - - [28/Jul/2025 12:07:27] "POST /pathfinder/validate HTTP/1.1" 200 -
+2025-07-28 12:07:28,933 - INFO - 127.0.0.1 - - [28/Jul/2025 12:07:28] "POST /pathfinder/find HTTP/1.1" 200 -
+2025-07-28 12:07:28,981 - INFO - 127.0.0.1 - - [28/Jul/2025 12:07:28] "POST /pathfinder/pathvis HTTP/1.1" 200 -
+2025-07-28 12:07:40,662 - INFO - 127.0.0.1 - - [28/Jul/2025 12:07:40] "POST /api/receive-paths HTTP/1.1" 200 -
+2025-07-28 12:07:42,188 - INFO - 127.0.0.1 - - [28/Jul/2025 12:07:42] "GET /configuration-push HTTP/1.1" 200 -
+2025-07-28 12:07:42,267 - INFO - 127.0.0.1 - - [28/Jul/2025 12:07:42] "GET /api/paths HTTP/1.1" 200 -
+2025-07-28 12:07:44,932 - INFO - 127.0.0.1 - - [28/Jul/2025 12:07:44] "POST /api/select-path HTTP/1.1" 200 -
+2025-07-28 12:07:44,940 - INFO - 127.0.0.1 - - [28/Jul/2025 12:07:44] "[33mPOST /api/router-loopbacks HTTP/1.1[0m" 404 -
+2025-07-28 12:07:47,161 - INFO - 127.0.0.1 - - [28/Jul/2025 12:07:47] "GET /vpn-services HTTP/1.1" 200 -
+2025-07-28 12:07:54,184 - INFO - 127.0.0.1 - - [28/Jul/2025 12:07:54] "GET /configuration-push HTTP/1.1" 200 -
+2025-07-28 12:07:54,269 - INFO - 127.0.0.1 - - [28/Jul/2025 12:07:54] "GET /api/paths HTTP/1.1" 200 -
+2025-07-28 12:08:02,260 - INFO - 127.0.0.1 - - [28/Jul/2025 12:08:02] "GET / HTTP/1.1" 200 -
+2025-07-28 12:08:02,286 - INFO - 127.0.0.1 - - [28/Jul/2025 12:08:02] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
+2025-07-28 12:08:03,936 - INFO - 127.0.0.1 - - [28/Jul/2025 12:08:03] "GET /topology HTTP/1.1" 200 -
+2025-07-28 12:08:05,685 - INFO - 127.0.0.1 - - [28/Jul/2025 12:08:05] "GET /topology/basic HTTP/1.1" 200 -
+2025-07-28 12:08:07,457 - INFO - 127.0.0.1 - - [28/Jul/2025 12:08:07] "GET /topology HTTP/1.1" 200 -
+2025-07-28 12:08:08,687 - INFO - 127.0.0.1 - - [28/Jul/2025 12:08:08] "GET /topology/protocol HTTP/1.1" 200 -
+2025-07-28 12:08:08,774 - INFO - 127.0.0.1 - - [28/Jul/2025 12:08:08] "GET /api/protocol-topology HTTP/1.1" 200 -
+2025-07-28 12:08:13,528 - INFO - 127.0.0.1 - - [28/Jul/2025 12:08:13] "GET / HTTP/1.1" 200 -
+2025-07-28 12:08:13,550 - INFO - 127.0.0.1 - - [28/Jul/2025 12:08:13] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -

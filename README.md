@@ -23,6 +23,8 @@ This project presents a novel, web-based network automation and visualization pl
 gns3-webapp/
 │
 ├── app.py                      # Main backend entry point (Flask/Django/FastAPI)
+├── OUTPUTS                     #Folder containing screenshots of outputs for reference 
+├── OUTPUT_DEMO                 #Folder containing output as screen recording , after execution of website on localhost 
 │
 ├── templates/                  # All HTML (Jinja2) templates for frontend
 │   ├── index.html

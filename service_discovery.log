@@ -472,3 +472,25 @@ b'\n#184\n<?xml version="1.0" encoding="UTF-8"?><nc:rpc xmlns:nc="urn:ietf:param
 2025-07-28 12:08:08,774 - INFO - 127.0.0.1 - - [28/Jul/2025 12:08:08] "GET /api/protocol-topology HTTP/1.1" 200 -
 2025-07-28 12:08:13,528 - INFO - 127.0.0.1 - - [28/Jul/2025 12:08:13] "GET / HTTP/1.1" 200 -
 2025-07-28 12:08:13,550 - INFO - 127.0.0.1 - - [28/Jul/2025 12:08:13] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
+2025-08-02 21:19:42,359 - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:5006
+2025-08-02 21:19:42,359 - INFO - [33mPress CTRL+C to quit[0m
+2025-08-02 21:19:42,361 - INFO -  * Restarting with stat
+2025-08-02 21:19:42,767 - WARNING -  * Debugger is active!
+2025-08-02 21:19:42,780 - INFO -  * Debugger PIN: 980-504-814
+2025-08-02 21:19:49,995 - INFO - 127.0.0.1 - - [02/Aug/2025 21:19:49] "GET / HTTP/1.1" 200 -
+2025-08-02 21:19:50,051 - INFO - 127.0.0.1 - - [02/Aug/2025 21:19:50] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
+2025-08-02 21:19:51,422 - INFO - 127.0.0.1 - - [02/Aug/2025 21:19:51] "[33mGET /favicon.ico HTTP/1.1[0m" 404 -
+2025-08-02 21:19:52,598 - INFO - 127.0.0.1 - - [02/Aug/2025 21:19:52] "GET /inventory HTTP/1.1" 200 -
+2025-08-02 21:19:52,625 - INFO - 127.0.0.1 - - [02/Aug/2025 21:19:52] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
+2025-08-02 21:24:18,444 - INFO - 127.0.0.1 - - [02/Aug/2025 21:24:18] "GET /topology HTTP/1.1" 200 -
+2025-08-02 21:24:20,331 - INFO - 127.0.0.1 - - [02/Aug/2025 21:24:20] "GET /topology/basic HTTP/1.1" 200 -
+2025-08-02 21:24:22,326 - INFO - 127.0.0.1 - - [02/Aug/2025 21:24:22] "GET /topology HTTP/1.1" 200 -
+2025-08-02 21:24:23,453 - INFO - 127.0.0.1 - - [02/Aug/2025 21:24:23] "GET /topology/protocol HTTP/1.1" 200 -
+2025-08-02 21:24:23,561 - INFO - 127.0.0.1 - - [02/Aug/2025 21:24:23] "GET /api/protocol-topology HTTP/1.1" 200 -
+2025-08-02 21:33:40,400 - INFO - 127.0.0.1 - - [02/Aug/2025 21:33:40] "GET / HTTP/1.1" 200 -
+2025-08-02 21:33:40,425 - INFO - 127.0.0.1 - - [02/Aug/2025 21:33:40] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
+2025-08-02 21:33:42,614 - INFO - 127.0.0.1 - - [02/Aug/2025 21:33:42] "GET /rib HTTP/1.1" 200 -
+2025-08-02 21:33:42,642 - INFO - 127.0.0.1 - - [02/Aug/2025 21:33:42] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
+2025-08-02 21:34:01,879 - INFO - 127.0.0.1 - - [02/Aug/2025 21:34:01] "GET /rib/history HTTP/1.1" 200 -
+2025-08-02 21:34:01,904 - INFO - 127.0.0.1 - - [02/Aug/2025 21:34:01] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -

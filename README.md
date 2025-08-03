@@ -225,6 +225,104 @@ gns3-webapp/
 
 ## Usage Guide
 
+# GNS3 WebApp - Network Automation Platform
+
+## 4. Setup & Installation
+
+
+git clone <your-repo-url>
+cd gns3-webapp
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+python3 app.py
+App starts at: http://localhost:5006/
+
+ ### GNS3 Lab Setup
+ Supported Topologies
+ 
+- ** Topology 1: Cisco-Arista-Juniper Triangle **
+
+   -Cisco Catalyst 8000v
+   -Juniper vSRX
+   -Arista vEOS
+
+- ** Topology 2: Full-Mesh 4-Router Cisco Lab **
+
+   -4 Cisco Routers in full-mesh
+   -OSPF-enabled for pathfinding
+
+### Prerequisites
+-GNS3 installed
+-Licensed appliances: CSR1000v, C8000v, Juniper vSRX, Arista vEOS
+-tap0 configured in GNS3 to bridge host and topology
+-Host must ping all routers in topology
+
+### Topology 1 Setup
+### Topology Configuration
+
+| Device      | Interface  | IP             | Connected To |
+|-------------|------------|----------------|--------------|
+| Cisco8000v  | Gi1        | 10.0.12.1/24   | Arista       |
+|             | Gi2        | 10.0.13.1/24   | Juniper      |
+|             | Gi3        | 192.168.100.2  | tap0         |
+| Arista      | Eth1       | 10.0.12.2/24   | Cisco        |
+|             | Eth2       | 10.0.14.1/24   | Juniper      |
+| Juniper     | ge-0/0/0   | 10.0.13.2/24   | Cisco        |
+|             | ge-0/0/1   | 10.0.14.2/24   | Arista       |
+
+
+### Cisco
+conf t
+router ospf 1
+ network 10.0.12.0 0.0.0.255 area 0
+ network 10.0.13.0 0.0.0.255 area 0
+bash
+### Arista
+router ospf 1
+ network 10.0.12.0/24 area 0
+ network 10.0.14.0/24 area 0
+### Juniper
+set protocols ospf area 0 interface ge-0/0/0.0
+set protocols ospf area 0 interface ge-0/0/1.0
+
+### Topology 2 Setup
+| Device  | Interface | IP             | Connected To |
+|---------|-----------|----------------|--------------|
+| Router1 | Gi1       | 10.0.12.1/24   | Router2      |
+|         | Gi2       | 10.0.13.1/24   | Router3      |
+|         | Gi3       | 192.168.100.2  | tap0         |
+|         | lo        | 192.168.0.1    |              |
+| Router2 | Gi1       | 10.0.12.2/24   | Router1      |
+|         | Gi2       | 10.0.21.1/24   | Router4      |
+|         | lo        | 192.168.0.2    |              |
+| Router3 | Gi1       | 10.0.13.2/24   | Router1      |
+|         | Gi2       | 10.0.23.1/24   | Router4      |
+|         | lo        | 192.168.0.3    |              |
+| Router4 | Gi1       | 10.0.21.2/24   | Router2      |
+|         | Gi2       | 10.0.23.2/24   | Router3      |
+|         | lo        | 192.168.0.4    |              |
+
+
+bash
+conf t
+router ospf 1
+ network 10.0.12.0 0.0.0.255 area 0
+ network 10.0.13.0 0.0.0.255 area 0
+ network 10.0.21.0 0.0.0.255 area 0
+ network 10.0.23.0 0.0.0.255 area 0
+
+Configure tap0 on Host (Linux)
+
+sudo ip tuntap add dev tap0 mode tap
+sudo ip addr add 192.168.100.1/24 dev tap0
+sudo ip link set dev tap0 up
+Connect tap0 to Cloud node in GNS3
+Ping 192.168.100.2 to verify connectivity
+
+### IMPORTANT
+   Make sure you replicate the topology as shown in the picture in the folder topologies  and enable ospf all througout .use one topology at a time . make sure you end connection when you switch topologies to clear logs and smooth functioning All the routers in the topology should be pingable from the PC . For this you may change the default gateway to the ip of router connected to the tap interface. Make sure all routers know how to reach PC either through ospf for extra care . Once all routers are pingable (you may also enable static routes to make it happen ) , either by an ip on the router interface , or their loopback ip , you moce to the web ui workflow. 
+
 ### Web UI Workflows
 
 - **Inventory Discovery**:  

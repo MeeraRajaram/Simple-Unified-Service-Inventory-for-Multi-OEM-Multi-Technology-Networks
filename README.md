@@ -287,7 +287,7 @@ This project was developed as part of the Smart World & Communication division a
   Smart World & Communication, L&T
 
 - **Meera R**  
-  *Intern – Full-Stack Developer, Core Coder*  
+  *Intern – Full-Stack Developer, Coder*  
   Smart World & Communication, L&T
 
 - **Lakshmi Narayanan**  
@@ -295,7 +295,7 @@ This project was developed as part of the Smart World & Communication division a
   Smart World & Communication, L&T
 
 - **Abhishek Kumar S**  
-  *Intern – Full-Stack Developer, Coder*  
+  *Intern – Full-Stack Developer, Core Coder*  
   Smart World & Communication, L&T
 
 ## Contact

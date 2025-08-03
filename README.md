@@ -23,7 +23,8 @@ gns3-webapp/
 │
 ├── app.py                      # Main backend entry point (Flask/Django/FastAPI)
 ├── OUTPUTS                     #Folder containing screenshots of outputs for reference 
-├── OUTPUT_DEMO                 #Folder containing output as screen recording , after execution of website on localhost 
+├── OUTPUT_DEMO                 #Folder containing output as screen recording , after execution of website on localhost
+├── TOPOLOGY                    #Folder containing topology . The outputs obtained are for the topologies mentioned above . You may configure your topology as in the screenshots provided to check the basic website functioning
 │
 ├── templates/                  # All HTML (Jinja2) templates for frontend
 │   ├── index.html

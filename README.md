@@ -274,22 +274,34 @@ gns3-webapp/
 
 ---
 
-## Contribution & Citation
+## Contributors
 
-- **Contributions**:  
-  Please submit pull requests with clear docstrings and tests.
-- **Citation**:  
-  If using this project in academic work, please cite as:  
-  ```
-  <Your Name>, "English-Driven Web-Based Network Automation and Visualization," IEEE, 2024.
-  ```
+This project was developed as part of the Smart World & Communication division at L&T.
 
----
+- **Premkumar B**  
+  *Project Manager, Mentor*  
+  Smart World & Communication, L&T
+
+- **Jayashree Balaji**  
+  *Mentor*  
+  Smart World & Communication, L&T
+
+- **Meera R**  
+  *Intern – Full-Stack Developer, Core Coder*  
+  Smart World & Communication, L&T
+
+- **Lakshmi Narayanan**  
+  *Intern – Networking Expert, Tester, Coder*  
+  Smart World & Communication, L&T
+
+- **Abhishek Kumar S**  
+  *Intern – Full-Stack Developer, Coder*  
+  Smart World & Communication, L&T
 
 ## Contact
 
 For questions, issues, or collaboration, please contact:  
-<your-email@example.com>
+meerarajaram01@gmail.com
 
 ---
 

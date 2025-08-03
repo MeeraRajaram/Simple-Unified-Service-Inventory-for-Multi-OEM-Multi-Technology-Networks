@@ -14,7 +14,6 @@ This project presents a novel, web-based network automation and visualization pl
 - **RIB Parsing and Display**: Multi-vendor RIB extraction and visualization.
 - **Configuration Push**: L3VPN/VRF service creation and interface assignment via NETCONF/YANG.
 - **Database-Driven**: All state (discovery, RIB, VRF, push data) is stored in SQLite for auditability and reproducibility.
-- **IEEE-Ready Codebase**: All modules and scripts are documented with professional docstrings and modular design.
 - **Testing Suite**: Includes pytest/unittest-based tests for critical modules and workflows.
 
 ---
@@ -242,24 +241,6 @@ gns3-webapp/
   - Enter VRF details and assign interfaces via the UI.
   - Push VRF configs to all routers in the path with a single click.
   - View results and debug output in the UI.
-
-### CLI & Testing
-
-- **Run unit tests**  
-  ```bash
-  pytest test_routefind/
-  ```
-  or
-  ```bash
-  python3 -m unittest discover test_routefind/
-  ```
-
-- **Standalone scripts**  
-  - `test_device_info.py`: Test NETCONF device info retrieval.
-  - `test_router_finder.py`: Debug router lookup logic.
-  - `test_juniper.py`, `test_arista_venv.py`: Vendor-specific RIB parsing tests.
-
----
 
 ## Novelty & Academic Value
 
